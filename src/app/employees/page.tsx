@@ -6,6 +6,7 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
+import Input from "@/components/ui/Input";
 import { PlusCircle, Pencil, Trash2, Users } from "lucide-react";
 
 export default function EmployeesPage() {
@@ -62,13 +63,13 @@ export default function EmployeesPage() {
           사원 등록
         </h3>
         <div className="flex gap-3">
-          <input
+          <Input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
             placeholder="이름 입력"
-            className="flex-1 px-4 py-2.5 bg-surface-secondary border border-border rounded-lg text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-primary-400 focus:ring-4 focus:ring-primary-50 transition-all"
+            className="flex-1"
           />
           <Button onClick={handleAdd}>등록</Button>
         </div>
@@ -101,12 +102,12 @@ export default function EmployeesPage() {
                   <td className="py-4 px-5 text-xs text-text-tertiary font-mono">{idx + 1}</td>
                   <td className="py-4 px-5">
                     {editingId === emp.id ? (
-                      <input
+                      <Input
+                        inputSize="sm"
                         type="text"
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && handleUpdate(emp.id)}
-                        className="px-3 py-1.5 bg-surface border border-primary-200 rounded-lg text-sm text-text-primary focus:outline-none focus:ring-4 focus:ring-primary-50 transition-all"
                         autoFocus
                       />
                     ) : (

@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { CleaningDuty, RecyclingState } from "@/lib/types";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
+import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import { ClipboardCheck, Users, Clock, Recycle, Clipboard } from "lucide-react";
 
@@ -11,13 +12,17 @@ export default function Dashboard() {
   const [duty, setDuty] = useState<CleaningDuty | null>(null);
   const [recycling, setRecycling] = useState<RecyclingState | null>(null);
 
-  const currentMonth = new Date().toISOString().slice(0, 7);
-  const today = new Date().toLocaleDateString("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    weekday: "long",
-  });
+  const currentMonth = useMemo(() => new Date().toISOString().slice(0, 7), []);
+  const today = useMemo(
+    () =>
+      new Date().toLocaleDateString("ko-KR", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        weekday: "long",
+      }),
+    []
+  );
 
   useEffect(() => {
     fetch(`/api/duties?month=${currentMonth}`)
@@ -38,12 +43,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight text-text-primary">
-          대시보드
-        </h2>
-        <p className="text-sm text-text-tertiary mt-1">{today}</p>
-      </div>
+      <PageHeader title="대시보드" badge={today} />
 
       {/* 요약 통계 */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

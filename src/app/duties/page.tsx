@@ -6,14 +6,16 @@ import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
-import { Dices, Loader2, AlertTriangle, Clock, LayoutGrid } from "lucide-react";
+import Button from "@/components/ui/Button";
+import Alert from "@/components/ui/Alert";
+import { Dices, Loader2, Clock, LayoutGrid } from "lucide-react";
 
 export default function DutiesPage() {
   const [duty, setDuty] = useState<CleaningDuty | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const currentMonth = new Date().toISOString().slice(0, 7);
+  const [currentMonth] = useState(() => new Date().toISOString().slice(0, 7));
 
   useEffect(() => {
     fetch(`/api/duties?month=${currentMonth}`)
@@ -55,22 +57,13 @@ export default function DutiesPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="청소 배정" badge={currentMonth}>
-        <button
-          onClick={handleDraw}
-          disabled={loading}
-          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl text-sm font-semibold shadow-lg hover:shadow-xl hover:from-primary-600 hover:to-primary-700 active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none transition-all duration-300"
-        >
+        <Button variant="gradient-primary" size="lg" onClick={handleDraw} disabled={loading}>
           {loading ? <Loader2 size={18} className="animate-spin" /> : <Dices size={18} />}
           {loading ? "배정 중..." : "랜덤 뽑기"}
-        </button>
+        </Button>
       </PageHeader>
 
-      {warning && (
-        <div className="flex items-start gap-3 bg-warning-50 border-l-4 border-warning-500 rounded-r-lg p-4">
-          <AlertTriangle size={18} className="text-warning-500 shrink-0 mt-0.5" />
-          <p className="text-sm text-warning-600">{warning}</p>
-        </div>
-      )}
+      {warning && <Alert>{warning}</Alert>}
 
       {duty ? (
         <>

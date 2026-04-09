@@ -6,7 +6,9 @@ import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
-import { RefreshCw, Loader2, AlertTriangle, Clock, Info, Recycle } from "lucide-react";
+import Button from "@/components/ui/Button";
+import Alert from "@/components/ui/Alert";
+import { RefreshCw, Loader2, Clock, Info, Recycle } from "lucide-react";
 
 interface RecyclingResponse extends RecyclingState {
   totalEmployees: number;
@@ -49,23 +51,14 @@ export default function RecyclingPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="분리수거 관리">
-        <button
-          onClick={handleGenerate}
-          disabled={loading}
-          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-success-500 to-emerald-500 text-white rounded-xl text-sm font-semibold shadow-lg hover:shadow-xl hover:from-success-600 hover:to-emerald-600 active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none transition-all duration-300"
-        >
+        <Button variant="gradient-success" size="lg" onClick={handleGenerate} disabled={loading}>
           {loading ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={18} />}
           {loading ? "생성 중..." : "다음 로테이션 생성"}
-        </button>
+        </Button>
       </PageHeader>
 
       {state?.totalEmployees === 0 && (
-        <div className="flex items-start gap-3 bg-warning-50 border-l-4 border-warning-500 rounded-r-lg p-4">
-          <AlertTriangle size={18} className="text-warning-500 shrink-0 mt-0.5" />
-          <p className="text-sm text-warning-600">
-            등록된 사원이 없습니다. 먼저 사원을 등록해주세요.
-          </p>
-        </div>
+        <Alert>등록된 사원이 없습니다. 먼저 사원을 등록해주세요.</Alert>
       )}
 
       {state && state.schedule.length > 0 ? (

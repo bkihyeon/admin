@@ -1,6 +1,6 @@
 import { ButtonHTMLAttributes } from "react";
 
-type Variant = "primary" | "success" | "warning" | "danger" | "ghost";
+type Variant = "primary" | "success" | "warning" | "danger" | "ghost" | "gradient-primary" | "gradient-success";
 type Size = "sm" | "md" | "lg";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -19,6 +19,10 @@ const variantClasses: Record<Variant, string> = {
     "bg-danger-50 text-danger-600 hover:bg-danger-100 border border-danger-100",
   ghost:
     "bg-transparent text-text-secondary hover:bg-surface-tertiary border border-border",
+  "gradient-primary":
+    "bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl shadow-lg hover:shadow-xl hover:from-primary-600 hover:to-primary-700",
+  "gradient-success":
+    "bg-gradient-to-r from-success-500 to-emerald-500 text-white rounded-xl shadow-lg hover:shadow-xl hover:from-success-600 hover:to-emerald-600",
 };
 
 const sizeClasses: Record<Size, string> = {

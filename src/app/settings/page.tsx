@@ -6,6 +6,7 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
+import Input from "@/components/ui/Input";
 import { PlusCircle, Pencil, Trash2, Settings } from "lucide-react";
 
 export default function SettingsPage() {
@@ -67,23 +68,23 @@ export default function SettingsPage() {
         <div className="flex gap-3 items-end">
           <div className="flex-1">
             <label className="block text-xs font-medium text-text-secondary mb-1.5">항목명</label>
-            <input
+            <Input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAdd()}
               placeholder="예: 빗자루, 청소기, 대걸레..."
-              className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-lg text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-primary-400 focus:ring-4 focus:ring-primary-50 transition-all"
+              className="w-full"
             />
           </div>
           <div className="w-28">
             <label className="block text-xs font-medium text-text-secondary mb-1.5">인원수</label>
-            <input
+            <Input
               type="number"
               value={count}
               onChange={(e) => setCount(Math.max(1, Number(e.target.value)))}
               min={1}
-              className="w-full px-4 py-2.5 bg-surface-secondary border border-border rounded-lg text-sm text-text-primary text-center focus:outline-none focus:border-primary-400 focus:ring-4 focus:ring-primary-50 transition-all"
+              className="w-full text-center"
             />
           </div>
           <Button onClick={handleAdd}>추가</Button>
@@ -116,11 +117,11 @@ export default function SettingsPage() {
                 >
                   <td className="py-4 px-5">
                     {editingId === item.id ? (
-                      <input
+                      <Input
+                        inputSize="sm"
                         type="text"
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
-                        className="px-3 py-1.5 bg-surface border border-primary-200 rounded-lg text-sm text-text-primary focus:outline-none focus:ring-4 focus:ring-primary-50 transition-all"
                         autoFocus
                       />
                     ) : (
@@ -129,12 +130,13 @@ export default function SettingsPage() {
                   </td>
                   <td className="py-4 px-5 text-center">
                     {editingId === item.id ? (
-                      <input
+                      <Input
+                        inputSize="sm"
                         type="number"
                         value={editCount}
                         onChange={(e) => setEditCount(Math.max(1, Number(e.target.value)))}
                         min={1}
-                        className="w-16 px-3 py-1.5 bg-surface border border-primary-200 rounded-lg text-sm text-text-primary text-center focus:outline-none focus:ring-4 focus:ring-primary-50 transition-all"
+                        className="w-16 text-center"
                       />
                     ) : (
                       <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary-50 text-primary-700">
