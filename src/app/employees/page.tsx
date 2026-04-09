@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { Employee } from "@/lib/types";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
+import PageHeader from "@/components/ui/PageHeader";
+import EmptyState from "@/components/ui/EmptyState";
+import { PlusCircle, Pencil, Trash2, Users } from "lucide-react";
 
 export default function EmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -49,11 +54,13 @@ export default function EmployeesPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900">사원 관리</h2>
+      <PageHeader title="사원 관리" badge={`${employees.length}명`} />
 
-      {/* 사원 등록 */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">사원 등록</h3>
+      <Card className="p-6">
+        <h3 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-2">
+          <PlusCircle size={16} className="text-primary-500" />
+          사원 등록
+        </h3>
         <div className="flex gap-3">
           <input
             type="text"
@@ -61,101 +68,76 @@ export default function EmployeesPage() {
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
             placeholder="이름 입력"
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+            className="flex-1 px-4 py-2.5 bg-surface-secondary border border-border rounded-lg text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-primary-400 focus:ring-4 focus:ring-primary-50 transition-all"
           />
-          <button
-            onClick={handleAdd}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            등록
-          </button>
+          <Button onClick={handleAdd}>등록</Button>
         </div>
-      </div>
+      </Card>
 
-      {/* 사원 목록 */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
-          사원 목록 ({employees.length}명)
-        </h3>
+      <Card>
         {employees.length === 0 ? (
-          <p className="text-gray-500">등록된 사원이 없습니다.</p>
+          <EmptyState
+            icon={Users}
+            title="등록된 사원이 없습니다"
+            description="첫 번째 사원을 등록해보세요."
+          />
         ) : (
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">
-                  번호
-                </th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">
-                  이름
-                </th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">
-                  관리
-                </th>
+              <tr className="bg-surface-tertiary/50">
+                <th className="text-left py-3 px-5 text-xs font-semibold text-text-tertiary uppercase tracking-wider w-16">번호</th>
+                <th className="text-left py-3 px-5 text-xs font-semibold text-text-tertiary uppercase tracking-wider">이름</th>
+                <th className="text-right py-3 px-5 text-xs font-semibold text-text-tertiary uppercase tracking-wider w-40">관리</th>
               </tr>
             </thead>
             <tbody>
               {employees.map((emp, idx) => (
-                <tr key={emp.id} className="border-b border-gray-100 last:border-0">
-                  <td className="py-3 px-4 text-sm text-gray-600">{idx + 1}</td>
-                  <td className="py-3 px-4">
+                <tr
+                  key={emp.id}
+                  className={`border-b border-border-light last:border-0 transition-colors duration-150 ${
+                    editingId === emp.id ? "bg-primary-50/50" : "hover:bg-surface-secondary"
+                  }`}
+                >
+                  <td className="py-4 px-5 text-xs text-text-tertiary font-mono">{idx + 1}</td>
+                  <td className="py-4 px-5">
                     {editingId === emp.id ? (
                       <input
                         type="text"
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
-                        onKeyDown={(e) =>
-                          e.key === "Enter" && handleUpdate(emp.id)
-                        }
-                        className="px-3 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                        onKeyDown={(e) => e.key === "Enter" && handleUpdate(emp.id)}
+                        className="px-3 py-1.5 bg-surface border border-primary-200 rounded-lg text-sm text-text-primary focus:outline-none focus:ring-4 focus:ring-primary-50 transition-all"
                         autoFocus
                       />
                     ) : (
-                      <span className="text-gray-900">{emp.name}</span>
+                      <span className="text-sm font-medium text-text-primary">{emp.name}</span>
                     )}
                   </td>
-                  <td className="py-3 px-4 text-right space-x-2">
-                    {editingId === emp.id ? (
-                      <>
-                        <button
-                          onClick={() => handleUpdate(emp.id)}
-                          className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
-                        >
-                          저장
-                        </button>
-                        <button
-                          onClick={() => setEditingId(null)}
-                          className="px-3 py-1 text-sm bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
-                        >
-                          취소
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => {
-                            setEditingId(emp.id);
-                            setEditName(emp.name);
-                          }}
-                          className="px-3 py-1 text-sm bg-yellow-500 text-white rounded hover:bg-yellow-600"
-                        >
-                          수정
-                        </button>
-                        <button
-                          onClick={() => handleDelete(emp.id, emp.name)}
-                          className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600"
-                        >
-                          삭제
-                        </button>
-                      </>
-                    )}
+                  <td className="py-4 px-5 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      {editingId === emp.id ? (
+                        <>
+                          <Button size="sm" onClick={() => handleUpdate(emp.id)}>저장</Button>
+                          <Button variant="ghost" size="sm" onClick={() => setEditingId(null)}>취소</Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button variant="ghost" size="sm" onClick={() => { setEditingId(emp.id); setEditName(emp.name); }}>
+                            <Pencil size={14} /> 수정
+                          </Button>
+                          <Button variant="danger" size="sm" onClick={() => handleDelete(emp.id, emp.name)}>
+                            <Trash2 size={14} /> 삭제
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { CleaningDuty } from "@/lib/types";
+import Card from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
+import PageHeader from "@/components/ui/PageHeader";
+import EmptyState from "@/components/ui/EmptyState";
+import { Dices, Loader2, AlertTriangle, Clock, LayoutGrid } from "lucide-react";
 
 export default function DutiesPage() {
   const [duty, setDuty] = useState<CleaningDuty | null>(null);
@@ -49,63 +54,53 @@ export default function DutiesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">
-          청소 배정 ({currentMonth})
-        </h2>
+      <PageHeader title="청소 배정" badge={currentMonth}>
         <button
           onClick={handleDraw}
           disabled={loading}
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-lg font-medium"
+          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl text-sm font-semibold shadow-lg hover:shadow-xl hover:from-primary-600 hover:to-primary-700 active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none transition-all duration-300"
         >
-          {loading ? "뽑는 중..." : "🎲 랜덤 뽑기"}
+          {loading ? <Loader2 size={18} className="animate-spin" /> : <Dices size={18} />}
+          {loading ? "배정 중..." : "랜덤 뽑기"}
         </button>
-      </div>
+      </PageHeader>
 
       {warning && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-yellow-800 text-sm">
-          ⚠️ {warning}
+        <div className="flex items-start gap-3 bg-warning-50 border-l-4 border-warning-500 rounded-r-lg p-4">
+          <AlertTriangle size={18} className="text-warning-500 shrink-0 mt-0.5" />
+          <p className="text-sm text-warning-600">{warning}</p>
         </div>
       )}
 
       {duty ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {duty.assignments.map((a) => (
-            <div
-              key={a.dutyItemId}
-              className="bg-white rounded-lg border border-gray-200 p-6"
-            >
-              <div className="text-lg font-semibold text-gray-900 mb-3">
-                {a.dutyItemName}
-              </div>
-              <div className="space-y-1">
-                {a.assignedEmployeeNames.map((name, i) => (
-                  <div
-                    key={i}
-                    className="px-3 py-2 bg-blue-50 rounded text-blue-900 text-sm"
-                  >
-                    {name}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {duty.assignments.map((a) => (
+              <Card key={a.dutyItemId} hover className="p-5">
+                <div className="text-sm font-semibold text-text-primary pb-3 mb-3 border-b border-border-light">
+                  {a.dutyItemName}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {a.assignedEmployeeNames.map((name, i) => (
+                    <Badge key={i} variant="primary">{name}</Badge>
+                  ))}
+                </div>
+              </Card>
+            ))}
+          </div>
+          <p className="text-xs text-text-tertiary flex items-center gap-1.5">
+            <Clock size={14} />
+            배정일시: {new Date(duty.createdAt).toLocaleString("ko-KR")}
+          </p>
+        </>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-          <p className="text-gray-500 text-lg">
-            이번 달 청소 배정이 아직 없습니다.
-          </p>
-          <p className="text-gray-400 mt-2">
-            위의 &quot;랜덤 뽑기&quot; 버튼을 눌러 배정을 시작하세요.
-          </p>
-        </div>
-      )}
-
-      {duty && (
-        <p className="text-sm text-gray-400">
-          배정일시: {new Date(duty.createdAt).toLocaleString("ko-KR")}
-        </p>
+        <Card>
+          <EmptyState
+            icon={LayoutGrid}
+            title="이번 달 청소 배정이 없습니다"
+            description="상단의 랜덤 뽑기 버튼을 눌러 배정을 시작하세요."
+          />
+        </Card>
       )}
     </div>
   );

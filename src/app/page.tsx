@@ -2,12 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { CleaningDuty, RecyclingState } from "@/lib/types";
+import Card from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
+import EmptyState from "@/components/ui/EmptyState";
+import { ClipboardCheck, Users, Clock, Recycle, Clipboard } from "lucide-react";
 
 export default function Dashboard() {
   const [duty, setDuty] = useState<CleaningDuty | null>(null);
   const [recycling, setRecycling] = useState<RecyclingState | null>(null);
 
   const currentMonth = new Date().toISOString().slice(0, 7);
+  const today = new Date().toLocaleDateString("ko-KR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "long",
+  });
 
   useEffect(() => {
     fetch(`/api/duties?month=${currentMonth}`)
@@ -21,63 +31,135 @@ export default function Dashboard() {
       .then(setRecycling);
   }, [currentMonth]);
 
+  const totalAssigned = duty?.assignments.reduce(
+    (sum, a) => sum + a.assignedEmployeeNames.length,
+    0
+  ) ?? 0;
+
   return (
     <div className="space-y-8">
-      <h2 className="text-2xl font-bold text-gray-900">대시보드</h2>
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight text-text-primary">
+          대시보드
+        </h2>
+        <p className="text-sm text-text-tertiary mt-1">{today}</p>
+      </div>
+
+      {/* 요약 통계 */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card className="p-5">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-lg bg-primary-50 flex items-center justify-center text-primary-500">
+              <Clipboard size={20} strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-xs text-text-tertiary font-medium">배정 항목</p>
+              <p className="text-2xl font-bold text-text-primary">
+                {duty?.assignments.length ?? 0}
+              </p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-5">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-lg bg-success-50 flex items-center justify-center text-success-500">
+              <Users size={20} strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-xs text-text-tertiary font-medium">배정 인원</p>
+              <p className="text-2xl font-bold text-text-primary">{totalAssigned}</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-5">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-lg bg-warning-50 flex items-center justify-center text-warning-500">
+              <Clock size={20} strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-xs text-text-tertiary font-medium">분리수거</p>
+              <p className="text-2xl font-bold text-text-primary">
+                {recycling?.schedule.length ? `${recycling.schedule.length}주` : "-"}
+              </p>
+            </div>
+          </div>
+        </Card>
+      </div>
 
       {/* 이번 달 청소 배정 */}
-      <section className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
-          📋 이번 달 청소 배정 ({currentMonth})
-        </h3>
+      <Card className="p-6">
+        <div className="flex items-center gap-2 mb-5">
+          <ClipboardCheck size={20} strokeWidth={1.5} className="text-primary-500" />
+          <h3 className="text-base font-semibold text-text-primary">
+            이번 달 청소 배정
+          </h3>
+          <Badge variant="neutral">{currentMonth}</Badge>
+        </div>
         {duty ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {duty.assignments.map((a) => (
               <div
                 key={a.dutyItemId}
-                className="bg-blue-50 rounded-lg p-4 border border-blue-100"
+                className="rounded-lg bg-gradient-to-br from-primary-50 to-primary-100/50 border border-primary-100 p-4"
               >
-                <div className="font-medium text-blue-900">{a.dutyItemName}</div>
-                <div className="mt-1 text-sm text-blue-700">
-                  {a.assignedEmployeeNames.join(", ")}
+                <div className="text-sm font-semibold text-primary-800 mb-2">
+                  {a.dutyItemName}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {a.assignedEmployeeNames.map((name, i) => (
+                    <Badge key={i} variant="primary">{name}</Badge>
+                  ))}
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-gray-500">
-            이번 달 청소 배정이 아직 없습니다. &quot;청소 배정&quot; 페이지에서 뽑기를 진행해주세요.
-          </p>
+          <EmptyState
+            icon={Clipboard}
+            title="이번 달 배정이 없습니다"
+            description="청소 배정 페이지에서 랜덤 뽑기를 진행해주세요."
+            actionLabel="청소 배정으로 이동"
+            actionHref="/duties"
+          />
         )}
-      </section>
+      </Card>
 
       {/* 분리수거 스케줄 */}
-      <section className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
-          ♻️ 분리수거 스케줄
-        </h3>
+      <Card className="p-6">
+        <div className="flex items-center gap-2 mb-5">
+          <Recycle size={20} strokeWidth={1.5} className="text-success-500" />
+          <h3 className="text-base font-semibold text-text-primary">
+            분리수거 스케줄
+          </h3>
+        </div>
         {recycling && recycling.schedule.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {recycling.schedule.map((week) => (
               <div
                 key={week.weekNumber}
-                className="bg-green-50 rounded-lg p-4 border border-green-100"
+                className="rounded-lg bg-gradient-to-br from-success-50 to-emerald-50 border border-success-100 p-4"
               >
-                <div className="font-medium text-green-900">
+                <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-bold bg-success-100 text-success-700 mb-2">
                   {week.weekNumber}주차
-                </div>
-                <div className="mt-1 text-sm text-green-700">
-                  {week.assignedEmployeeNames.join(", ")}
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {week.assignedEmployeeNames.map((name, i) => (
+                    <Badge key={i} variant="success">{name}</Badge>
+                  ))}
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-gray-500">
-            분리수거 스케줄이 아직 없습니다. &quot;분리수거&quot; 페이지에서 로테이션을 생성해주세요.
-          </p>
+          <EmptyState
+            icon={Recycle}
+            title="분리수거 스케줄이 없습니다"
+            description="분리수거 페이지에서 로테이션을 생성해주세요."
+            actionLabel="분리수거로 이동"
+            actionHref="/recycling"
+          />
         )}
-      </section>
+      </Card>
     </div>
   );
 }
