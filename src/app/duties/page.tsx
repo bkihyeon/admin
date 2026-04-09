@@ -81,6 +81,18 @@ export default function DutiesPage() {
               </Card>
             ))}
           </div>
+          {duty.freeEmployeeNames?.length > 0 && (
+            <Card className="p-5 border-dashed">
+              <div className="text-sm font-semibold text-text-secondary pb-3 mb-3 border-b border-border-light">
+                프리 (미배정)
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {duty.freeEmployeeNames.map((name, i) => (
+                  <Badge key={i} variant="neutral">{name}</Badge>
+                ))}
+              </div>
+            </Card>
+          )}
           <p className="text-xs text-text-tertiary flex items-center gap-1.5">
             <Clock size={14} />
             배정일시: {new Date(duty.createdAt).toLocaleString("ko-KR")}

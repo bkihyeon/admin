@@ -72,7 +72,7 @@ export default function SettingsPage() {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+              onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && handleAdd()}
               placeholder="예: 빗자루, 청소기, 대걸레..."
               className="w-full"
             />

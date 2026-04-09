@@ -96,23 +96,33 @@ export default function Dashboard() {
           <Badge variant="neutral">{currentMonth}</Badge>
         </div>
         {duty ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {duty.assignments.map((a) => (
-              <div
-                key={a.dutyItemId}
-                className="rounded-lg bg-gradient-to-br from-primary-50 to-primary-100/50 border border-primary-100 p-4"
-              >
-                <div className="text-sm font-semibold text-primary-800 mb-2">
-                  {a.dutyItemName}
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {duty.assignments.map((a) => (
+                <div
+                  key={a.dutyItemId}
+                  className="rounded-lg bg-gradient-to-br from-primary-50 to-primary-100/50 border border-primary-100 p-4"
+                >
+                  <div className="text-sm font-semibold text-primary-800 mb-2">
+                    {a.dutyItemName}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {a.assignedEmployeeNames.map((name, i) => (
+                      <Badge key={i} variant="primary">{name}</Badge>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {a.assignedEmployeeNames.map((name, i) => (
-                    <Badge key={i} variant="primary">{name}</Badge>
-                  ))}
-                </div>
+              ))}
+            </div>
+            {duty.freeEmployeeNames?.length > 0 && (
+              <div className="mt-3 flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-text-tertiary font-medium">프리:</span>
+                {duty.freeEmployeeNames.map((name, i) => (
+                  <Badge key={i} variant="neutral">{name}</Badge>
+                ))}
               </div>
-            ))}
-          </div>
+            )}
+          </>
         ) : (
           <EmptyState
             icon={Clipboard}

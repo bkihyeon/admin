@@ -78,6 +78,14 @@ export default function HistoryPage() {
                   </div>
                 ))}
               </div>
+              {selectedDuty.freeEmployeeNames?.length > 0 && (
+                <div className="mt-4 flex items-center gap-2 flex-wrap">
+                  <span className="text-xs text-text-tertiary font-medium">프리:</span>
+                  {selectedDuty.freeEmployeeNames.map((name, i) => (
+                    <Badge key={i} variant="neutral">{name}</Badge>
+                  ))}
+                </div>
+              )}
               <p className="mt-4 text-xs text-text-tertiary flex items-center gap-1.5">
                 <Clock size={14} />
                 배정일시: {new Date(selectedDuty.createdAt).toLocaleString("ko-KR")}

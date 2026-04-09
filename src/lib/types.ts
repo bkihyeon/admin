@@ -21,6 +21,7 @@ export interface CleaningDuty {
   id: string;
   month: string; // "2026-04" 형식
   assignments: DutyAssignment[];
+  freeEmployeeNames: string[];
   createdAt: string;
 }
 

@@ -67,7 +67,7 @@ export default function EmployeesPage() {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+            onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && handleAdd()}
             placeholder="이름 입력"
             className="flex-1"
           />
@@ -107,7 +107,7 @@ export default function EmployeesPage() {
                         type="text"
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && handleUpdate(emp.id)}
+                        onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && handleUpdate(emp.id)}
                         autoFocus
                       />
                     ) : (

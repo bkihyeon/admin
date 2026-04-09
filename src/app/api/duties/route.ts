@@ -40,14 +40,19 @@ export async function POST(request: Request) {
   const totalRequired = dutyItems.reduce((sum, item) => sum + item.requiredCount, 0);
   const assignments = assignDuties(employees, dutyItems);
 
+  const assignedIds = new Set(assignments.flatMap((a) => a.assignedEmployeeIds));
+  const freeEmployeeNames = employees
+    .filter((e) => !assignedIds.has(e.id))
+    .map((e) => e.name);
+
   const duties = readJson<CleaningDuty[]>(DUTIES_FILE, []);
 
-  // 같은 월 기존 배정이 있으면 교체
   const existingIndex = duties.findIndex((d) => d.month === month);
   const newDuty: CleaningDuty = {
     id: generateId(),
     month,
     assignments,
+    freeEmployeeNames,
     createdAt: new Date().toISOString(),
   };
 
