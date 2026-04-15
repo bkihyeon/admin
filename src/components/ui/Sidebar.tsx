@@ -7,7 +7,6 @@ import {
   Users,
   Settings,
   ClipboardCheck,
-  Recycle,
   Clock,
 } from "lucide-react";
 
@@ -16,7 +15,6 @@ const NAV_ITEMS = [
   { href: "/employees", label: "사원 관리", icon: Users },
   { href: "/settings", label: "담당항목 설정", icon: Settings },
   { href: "/duties", label: "청소 배정", icon: ClipboardCheck },
-  { href: "/recycling", label: "분리수거", icon: Recycle },
   { href: "/history", label: "이력 조회", icon: Clock },
 ];
 

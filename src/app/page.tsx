@@ -1,16 +1,15 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { CleaningDuty, RecyclingState } from "@/lib/types";
+import { CleaningDuty } from "@/lib/types";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
-import { ClipboardCheck, Users, Clock, Recycle, Clipboard } from "lucide-react";
+import { ClipboardCheck, Users, Clipboard } from "lucide-react";
 
 export default function Dashboard() {
   const [duty, setDuty] = useState<CleaningDuty | null>(null);
-  const [recycling, setRecycling] = useState<RecyclingState | null>(null);
 
   const currentMonth = useMemo(() => new Date().toISOString().slice(0, 7), []);
   const today = useMemo(
@@ -30,10 +29,6 @@ export default function Dashboard() {
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) setDuty(data[0]);
       });
-
-    fetch("/api/recycling")
-      .then((r) => r.json())
-      .then(setRecycling);
   }, [currentMonth]);
 
   const totalAssigned = duty?.assignments.reduce(
@@ -46,7 +41,7 @@ export default function Dashboard() {
       <PageHeader title="대시보드" badge={today} />
 
       {/* 요약 통계 */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Card className="p-5">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 rounded-lg bg-primary-50 flex items-center justify-center text-primary-500">
@@ -68,19 +63,6 @@ export default function Dashboard() {
             <div>
               <p className="text-xs text-text-tertiary font-medium">배정 인원</p>
               <p className="text-2xl font-bold text-text-primary">{totalAssigned}</p>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-5">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-lg bg-warning-50 flex items-center justify-center text-warning-500">
-              <Clock size={20} strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-xs text-text-tertiary font-medium">분리수거</p>
-              <p className="text-2xl font-bold text-text-primary">
-                {recycling?.schedule.length ? `${recycling.schedule.length}주` : "-"}
-              </p>
             </div>
           </div>
         </Card>
@@ -130,43 +112,6 @@ export default function Dashboard() {
             description="청소 배정 페이지에서 랜덤 뽑기를 진행해주세요."
             actionLabel="청소 배정으로 이동"
             actionHref="/duties"
-          />
-        )}
-      </Card>
-
-      {/* 분리수거 스케줄 */}
-      <Card className="p-6">
-        <div className="flex items-center gap-2 mb-5">
-          <Recycle size={20} strokeWidth={1.5} className="text-success-500" />
-          <h3 className="text-base font-semibold text-text-primary">
-            분리수거 스케줄
-          </h3>
-        </div>
-        {recycling && recycling.schedule.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {recycling.schedule.map((week) => (
-              <div
-                key={week.weekNumber}
-                className="rounded-lg bg-gradient-to-br from-success-50 to-emerald-50 border border-success-100 p-4"
-              >
-                <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-bold bg-success-100 text-success-700 mb-2">
-                  {week.weekNumber}주차
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {week.assignedEmployeeNames.map((name, i) => (
-                    <Badge key={i} variant="success">{name}</Badge>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            icon={Recycle}
-            title="분리수거 스케줄이 없습니다"
-            description="분리수거 페이지에서 로테이션을 생성해주세요."
-            actionLabel="분리수거로 이동"
-            actionHref="/recycling"
           />
         )}
       </Card>
