@@ -15,13 +15,15 @@ export async function GET() {
 }
 
 export async function POST() {
-  const employees = await listEmployees();
+  const [employees, currentState] = await Promise.all([
+    listEmployees(),
+    getRecyclingState(),
+  ]);
 
   if (employees.length === 0) {
     return NextResponse.json({ error: "등록된 사원이 없습니다" }, { status: 400 });
   }
 
-  const currentState = await getRecyclingState();
   const { schedule, nextIndex } = generateRecyclingSchedule(
     employees,
     currentState.currentIndex
