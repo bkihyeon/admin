@@ -5,10 +5,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-npm run dev      # 개발 서버 (http://localhost:3000)
-npm run build    # 프로덕션 빌드
-npm run lint     # ESLint 실행
-npm run start    # 프로덕션 서버
+pnpm dev      # 개발 서버 (http://localhost:3000)
+pnpm build    # 프로덕션 빌드
+pnpm lint     # ESLint 실행
+pnpm start    # 프로덕션 서버
 ```
 
 ## Architecture
