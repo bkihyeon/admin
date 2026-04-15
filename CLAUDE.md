@@ -20,7 +20,9 @@ pnpm tsx scripts/migrate-json-to-db.ts  # 일회성: data/*.json → DB 이관
 
 ## Architecture
 
-회사 청소 담당 관리 프로그램. 관리자 1인이 사용하는 Next.js 풀스택 앱. Vercel + Neon Postgres 배포.
+회사 청소 담당 관리 프로그램. Next.js 풀스택 앱. Vercel + Neon Postgres 배포.
+
+사용 모델: 쓰기(사원/품목 등록, 배정 뽑기, 재활용 순환)는 사실상 관리자 1인이 수행하지만, **읽기는 여러 명이 동시에 접근 가능**한 공개 URL. 인증은 아직 없음 — 누구나 URL을 알면 수정도 가능한 상태이므로, 파괴적 작업(삭제/재배정)은 프론트 `confirm`으로만 방어 중. 추후 인증 도입 전까지는 같은 월 동시 재배정 같은 레이스는 `upsertDuty`의 원자성에 의존.
 
 ### 기술 스택
 - **Next.js 16** (App Router) + **TypeScript** (strict mode)
@@ -39,6 +41,8 @@ pnpm tsx scripts/migrate-json-to-db.ts  # 일회성: data/*.json → DB 이관
 - API 라우트(`src/app/api/`)는 repository 호출만 함 — raw SQL이나 db 인스턴스 직접 참조 금지
 - 페이지는 `"use client"` + `fetch`로 API 호출
 - `duties.assignments`, `recycling_state.schedule`은 JSONB로 저장 (월 단위 완결형 구조라 정규화 이득 없음)
+- JSONB에는 ID뿐 아니라 사원명/품목명 스냅샷도 함께 저장됨 — **의도적 동결**. "한 번 뽑힌 담당은 바뀌지 않는다"는 요구사항을 위해, 배정 시점의 이름을 그대로 보존. 사원 개명/삭제가 일어나도 과거 기록은 원형대로 유지되며, FK 없이도 표시에 문제없음
+- 단, "동결"은 **다른 월**에 한정. 같은 월 재배정은 `upsertDuty`가 덮어씀 (프론트 `src/app/duties/page.tsx`에서 `confirm` 경고 후 진행)
 - `recycling_state`는 `id = 1` singleton (한 행만 존재)
 - `duties.month`에 UNIQUE 제약 — 월별 중복은 DB가 강제, `upsertDuty`가 `ON CONFLICT DO UPDATE` 사용
 
