@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { readJson, writeJson } from "@/lib/storage";
-import { DutyItem } from "@/lib/types";
-
-const FILE = "duty-items.json";
+import {
+  updateDutyItem,
+  deleteDutyItem,
+} from "@/lib/db/repositories/duty-items";
 
 export async function PUT(
   request: Request,
@@ -14,17 +14,16 @@ export async function PUT(
     return NextResponse.json({ error: "항목명을 입력해주세요" }, { status: 400 });
   }
 
-  const items = readJson<DutyItem[]>(FILE, []);
-  const index = items.findIndex((i) => i.id === id);
-  if (index === -1) {
+  const updated = await updateDutyItem(id, {
+    name: name.trim(),
+    requiredCount: Math.max(1, Number(requiredCount) || 1),
+  });
+
+  if (!updated) {
     return NextResponse.json({ error: "항목을 찾을 수 없습니다" }, { status: 404 });
   }
 
-  items[index].name = name.trim();
-  items[index].requiredCount = Math.max(1, Number(requiredCount) || 1);
-  writeJson(FILE, items);
-
-  return NextResponse.json(items[index]);
+  return NextResponse.json(updated);
 }
 
 export async function DELETE(
@@ -32,13 +31,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const items = readJson<DutyItem[]>(FILE, []);
-  const filtered = items.filter((i) => i.id !== id);
+  const removed = await deleteDutyItem(id);
 
-  if (filtered.length === items.length) {
+  if (!removed) {
     return NextResponse.json({ error: "항목을 찾을 수 없습니다" }, { status: 404 });
   }
 
-  writeJson(FILE, filtered);
   return NextResponse.json({ success: true });
 }

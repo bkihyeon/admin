@@ -1,11 +1,8 @@
 import { NextResponse } from "next/server";
-import { readJson, writeJson, generateId } from "@/lib/storage";
-import { Employee } from "@/lib/types";
-
-const FILE = "employees.json";
+import { listEmployees, createEmployee } from "@/lib/db/repositories/employees";
 
 export async function GET() {
-  const employees = readJson<Employee[]>(FILE, []);
+  const employees = await listEmployees();
   return NextResponse.json(employees);
 }
 
@@ -15,14 +12,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "이름을 입력해주세요" }, { status: 400 });
   }
 
-  const employees = readJson<Employee[]>(FILE, []);
-  const newEmployee: Employee = {
-    id: generateId(),
-    name: name.trim(),
-    createdAt: new Date().toISOString(),
-  };
-  employees.push(newEmployee);
-  writeJson(FILE, employees);
-
+  const newEmployee = await createEmployee(name.trim());
   return NextResponse.json(newEmployee, { status: 201 });
 }

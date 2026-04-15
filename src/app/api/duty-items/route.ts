@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { readJson, writeJson, generateId } from "@/lib/storage";
-import { DutyItem } from "@/lib/types";
-
-const FILE = "duty-items.json";
+import {
+  listDutyItems,
+  createDutyItem,
+} from "@/lib/db/repositories/duty-items";
 
 export async function GET() {
-  const items = readJson<DutyItem[]>(FILE, []);
+  const items = await listDutyItems();
   return NextResponse.json(items);
 }
 
@@ -15,14 +15,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "항목명을 입력해주세요" }, { status: 400 });
   }
 
-  const items = readJson<DutyItem[]>(FILE, []);
-  const newItem: DutyItem = {
-    id: generateId(),
+  const newItem = await createDutyItem({
     name: name.trim(),
     requiredCount: Math.max(1, Number(requiredCount) || 1),
-  };
-  items.push(newItem);
-  writeJson(FILE, items);
+  });
 
   return NextResponse.json(newItem, { status: 201 });
 }
