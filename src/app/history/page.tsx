@@ -1,12 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { CleaningDuty } from "@/lib/types";
+import { useEffect, useState, useMemo } from "react";
+import { CleaningDuty, DutyAssignment } from "@/lib/types";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
-import { Clock } from "lucide-react";
+import { Clock, Building2 } from "lucide-react";
+
+function groupByOffice(assignments: DutyAssignment[]): Map<string, { officeName: string | null; items: DutyAssignment[] }> {
+  const groups = new Map<string, { officeName: string | null; items: DutyAssignment[] }>();
+  for (const a of assignments) {
+    const key = a.officeId ?? "__none__";
+    if (!groups.has(key)) {
+      groups.set(key, { officeName: a.officeName, items: [] });
+    }
+    groups.get(key)!.items.push(a);
+  }
+  return groups;
+}
 
 export default function HistoryPage() {
   const [duties, setDuties] = useState<CleaningDuty[]>([]);
@@ -23,6 +35,12 @@ export default function HistoryPage() {
 
   const selectedDuty = duties.find((d) => d.month === selectedMonth);
   const months = duties.map((d) => d.month);
+
+  type OfficeGroup = Map<string, { officeName: string | null; items: DutyAssignment[] }>;
+  const officeGroups = useMemo<OfficeGroup>(
+    () => (selectedDuty ? groupByOffice(selectedDuty.assignments) : new Map()),
+    [selectedDuty]
+  );
 
   return (
     <div className="space-y-6">
@@ -61,31 +79,46 @@ export default function HistoryPage() {
               <h3 className="text-base font-semibold text-text-primary mb-4">
                 {selectedDuty.month} 청소 배정
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {selectedDuty.assignments.map((a) => (
-                  <div
-                    key={a.dutyItemId}
-                    className="rounded-lg bg-surface-secondary border border-border-light p-4"
-                  >
-                    <div className="text-sm font-semibold text-text-primary mb-2">
-                      {a.dutyItemName}
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {a.assignedEmployeeNames.map((name, i) => (
-                        <Badge key={i} variant="neutral">{name}</Badge>
-                      ))}
-                    </div>
+
+              {Array.from(officeGroups.entries()).map(([key, { officeName, items }]) => (
+                <div key={key} className="mb-5 last:mb-0">
+                  <h4 className="text-sm font-semibold text-text-secondary mb-3 flex items-center gap-2">
+                    <Building2 size={14} className="text-primary-400" />
+                    {officeName ?? "미분류"}
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {items.map((a) => (
+                      <div
+                        key={a.dutyItemId}
+                        className="rounded-lg bg-surface-secondary border border-border-light p-4"
+                      >
+                        <div className="text-sm font-semibold text-text-primary mb-2">
+                          {a.dutyItemName}
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {a.assignedEmployeeNames.map((name, i) => (
+                            <Badge key={i} variant="neutral">{name}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              {selectedDuty.freeEmployeeNames?.length > 0 && (
-                <div className="mt-4 flex items-center gap-2 flex-wrap">
-                  <span className="text-xs text-text-tertiary font-medium">프리:</span>
-                  {selectedDuty.freeEmployeeNames.map((name, i) => (
-                    <Badge key={i} variant="neutral">{name}</Badge>
-                  ))}
+                  {/* 해당 사무실의 프리 사원 */}
+                  {selectedDuty.freeEmployees
+                    ?.filter((f) => (f.officeId ?? "__none__") === key)
+                    .map((f) =>
+                      f.employeeNames.length > 0 ? (
+                        <div key={`free-${key}`} className="mt-2 flex items-center gap-2 flex-wrap">
+                          <span className="text-xs text-text-tertiary font-medium">프리:</span>
+                          {f.employeeNames.map((name, i) => (
+                            <Badge key={i} variant="neutral">{name}</Badge>
+                          ))}
+                        </div>
+                      ) : null
+                    )}
                 </div>
-              )}
+              ))}
+
               <p className="mt-4 text-xs text-text-tertiary flex items-center gap-1.5">
                 <Clock size={14} />
                 배정일시: {new Date(selectedDuty.createdAt).toLocaleString("ko-KR")}

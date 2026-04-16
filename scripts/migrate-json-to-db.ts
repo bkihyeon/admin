@@ -7,9 +7,17 @@ import { neon } from "@neondatabase/serverless";
 import type {
   Employee,
   DutyItem,
-  CleaningDuty,
   RecyclingState,
 } from "../src/lib/types";
+
+/** 레거시 JSON 구조 (마이그레이션 이전 형식) */
+interface LegacyCleaningDuty {
+  id: string;
+  month: string;
+  assignments: unknown[];
+  freeEmployeeNames: string[];
+  createdAt: string;
+}
 
 const sql = neon(process.env.DATABASE_URL!);
 
@@ -43,7 +51,7 @@ async function migrateDutyItems() {
 }
 
 async function migrateDuties() {
-  const list = readJson<CleaningDuty[]>("duties.json");
+  const list = readJson<LegacyCleaningDuty[]>("duties.json");
   for (const d of list) {
     await sql`
       INSERT INTO duties (id, month, assignments, free_employee_names, created_at)

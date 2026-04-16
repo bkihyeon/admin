@@ -9,7 +9,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const { name, requiredCount } = await request.json();
+  const { name, requiredCount, officeId } = await request.json();
   if (!name?.trim()) {
     return NextResponse.json({ error: "항목명을 입력해주세요" }, { status: 400 });
   }
@@ -17,6 +17,7 @@ export async function PUT(
   const updated = await updateDutyItem(id, {
     name: name.trim(),
     requiredCount: Math.max(1, Number(requiredCount) || 1),
+    officeId,
   });
 
   if (!updated) {

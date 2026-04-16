@@ -10,7 +10,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const { name, requiredCount } = await request.json();
+  const { name, requiredCount, officeId } = await request.json();
   if (!name?.trim()) {
     return NextResponse.json({ error: "항목명을 입력해주세요" }, { status: 400 });
   }
@@ -18,6 +18,7 @@ export async function POST(request: Request) {
   const newItem = await createDutyItem({
     name: name.trim(),
     requiredCount: Math.max(1, Number(requiredCount) || 1),
+    officeId,
   });
 
   return NextResponse.json(newItem, { status: 201 });

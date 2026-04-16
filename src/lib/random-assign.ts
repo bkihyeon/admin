@@ -1,4 +1,4 @@
-import { Employee, DutyItem, DutyAssignment } from "./types";
+import { Employee, DutyItem, DutyAssignment, Office, OfficeFreeEmployees } from "./types";
 
 function shuffle<T>(array: T[]): T[] {
   const arr = [...array];
@@ -9,23 +9,27 @@ function shuffle<T>(array: T[]): T[] {
   return arr;
 }
 
-export function assignDuties(
+function assignItemsFromPool(
   employees: Employee[],
-  dutyItems: DutyItem[]
-): DutyAssignment[] {
+  dutyItems: DutyItem[],
+  officeId: string | null,
+  officeName: string | null
+): { assignments: DutyAssignment[]; freeEmployeeNames: string[] } {
   if (employees.length === 0 || dutyItems.length === 0) {
-    return [];
+    return {
+      assignments: [],
+      freeEmployeeNames: employees.map((e) => e.name),
+    };
   }
 
   const pool = shuffle([...employees]);
   let poolIndex = 0;
 
-  return dutyItems.map((item) => {
+  const assignments = dutyItems.map((item) => {
     const assigned: Employee[] = [];
 
     for (let i = 0; i < item.requiredCount; i++) {
       if (poolIndex >= pool.length) {
-        // 풀 소진 시 전체 사원에서 다시 셔플 (다른 항목 간 중복 허용)
         pool.push(...shuffle([...employees]));
       }
       assigned.push(pool[poolIndex]);
@@ -35,8 +39,84 @@ export function assignDuties(
     return {
       dutyItemId: item.id,
       dutyItemName: item.name,
+      officeId,
+      officeName,
       assignedEmployeeIds: assigned.map((e) => e.id),
       assignedEmployeeNames: assigned.map((e) => e.name),
     };
   });
+
+  const assignedIds = new Set(assignments.flatMap((a) => a.assignedEmployeeIds));
+  const freeEmployeeNames = employees
+    .filter((e) => !assignedIds.has(e.id))
+    .map((e) => e.name);
+
+  return { assignments, freeEmployeeNames };
+}
+
+/** 사무실별 독립 배정. 각 사무실의 사원 풀에서 해당 사무실 품목에 배정. */
+export function assignDuties(
+  employees: Employee[],
+  dutyItems: DutyItem[],
+  offices: Office[]
+): { assignments: DutyAssignment[]; freeEmployees: OfficeFreeEmployees[] } {
+  const officeMap = new Map(offices.map((o) => [o.id, o.name]));
+
+  // officeId 기준으로 그룹핑 (null = 미분류)
+  const officeIds = new Set<string | null>();
+  for (const e of employees) officeIds.add(e.officeId);
+  for (const d of dutyItems) officeIds.add(d.officeId);
+
+  const allAssignments: DutyAssignment[] = [];
+  const allFreeEmployees: OfficeFreeEmployees[] = [];
+
+  for (const oid of officeIds) {
+    const officeEmployees = employees.filter((e) => e.officeId === oid);
+    const officeItems = dutyItems.filter((d) => d.officeId === oid);
+    const officeName = oid ? (officeMap.get(oid) ?? null) : null;
+
+    const { assignments, freeEmployeeNames } = assignItemsFromPool(
+      officeEmployees,
+      officeItems,
+      oid,
+      officeName
+    );
+
+    allAssignments.push(...assignments);
+
+    if (freeEmployeeNames.length > 0) {
+      allFreeEmployees.push({
+        officeId: oid,
+        officeName,
+        employeeNames: freeEmployeeNames,
+      });
+    }
+  }
+
+  return { assignments: allAssignments, freeEmployees: allFreeEmployees };
+}
+
+/** 단일 사무실 배정. 해당 사무실 사원/품목만 대상. */
+export function assignDutiesForOffice(
+  employees: Employee[],
+  dutyItems: DutyItem[],
+  officeId: string,
+  officeName: string
+): { assignments: DutyAssignment[]; freeEmployees: OfficeFreeEmployees | null } {
+  const officeEmployees = employees.filter((e) => e.officeId === officeId);
+  const officeItems = dutyItems.filter((d) => d.officeId === officeId);
+
+  const { assignments, freeEmployeeNames } = assignItemsFromPool(
+    officeEmployees,
+    officeItems,
+    officeId,
+    officeName
+  );
+
+  const freeEmployees =
+    freeEmployeeNames.length > 0
+      ? { officeId, officeName, employeeNames: freeEmployeeNames }
+      : null;
+
+  return { assignments, freeEmployees };
 }

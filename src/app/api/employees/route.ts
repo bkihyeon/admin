@@ -7,11 +7,11 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const { name } = await request.json();
+  const { name, officeId } = await request.json();
   if (!name?.trim()) {
     return NextResponse.json({ error: "이름을 입력해주세요" }, { status: 400 });
   }
 
-  const newEmployee = await createEmployee(name.trim());
+  const newEmployee = await createEmployee({ name: name.trim(), officeId });
   return NextResponse.json(newEmployee, { status: 201 });
 }

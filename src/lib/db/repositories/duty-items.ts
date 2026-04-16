@@ -11,6 +11,7 @@ export async function listDutyItems(): Promise<DutyItem[]> {
 export async function createDutyItem(input: {
   name: string;
   requiredCount: number;
+  officeId?: string | null;
 }): Promise<DutyItem> {
   const [row] = await db
     .insert(dutyItems)
@@ -18,6 +19,7 @@ export async function createDutyItem(input: {
       id: generateId(),
       name: input.name,
       requiredCount: input.requiredCount,
+      officeId: input.officeId ?? null,
     })
     .returning();
   return row;
@@ -25,11 +27,15 @@ export async function createDutyItem(input: {
 
 export async function updateDutyItem(
   id: string,
-  input: { name: string; requiredCount: number }
+  input: { name: string; requiredCount: number; officeId?: string | null }
 ): Promise<DutyItem | null> {
   const [row] = await db
     .update(dutyItems)
-    .set({ name: input.name, requiredCount: input.requiredCount })
+    .set({
+      name: input.name,
+      requiredCount: input.requiredCount,
+      officeId: input.officeId ?? null,
+    })
     .where(eq(dutyItems.id, id))
     .returning();
   return row ?? null;

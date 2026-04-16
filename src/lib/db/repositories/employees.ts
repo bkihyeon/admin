@@ -8,6 +8,7 @@ function toEmployee(row: typeof employees.$inferSelect): Employee {
   return {
     id: row.id,
     name: row.name,
+    officeId: row.officeId,
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -17,21 +18,24 @@ export async function listEmployees(): Promise<Employee[]> {
   return rows.map(toEmployee);
 }
 
-export async function createEmployee(name: string): Promise<Employee> {
+export async function createEmployee(input: {
+  name: string;
+  officeId?: string | null;
+}): Promise<Employee> {
   const [row] = await db
     .insert(employees)
-    .values({ id: generateId(), name })
+    .values({ id: generateId(), name: input.name, officeId: input.officeId ?? null })
     .returning();
   return toEmployee(row);
 }
 
 export async function updateEmployee(
   id: string,
-  name: string
+  input: { name: string; officeId?: string | null }
 ): Promise<Employee | null> {
   const [row] = await db
     .update(employees)
-    .set({ name })
+    .set({ name: input.name, officeId: input.officeId ?? null })
     .where(eq(employees.id, id))
     .returning();
   return row ? toEmployee(row) : null;

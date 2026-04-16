@@ -2,14 +2,31 @@ import { desc, eq } from "drizzle-orm";
 import { db } from "../client";
 import { duties } from "../schema";
 import { generateId } from "../id";
-import type { CleaningDuty, DutyAssignment } from "@/lib/types";
+import type { CleaningDuty, DutyAssignment, OfficeFreeEmployees } from "@/lib/types";
+
+function normalizeFreeEmployees(
+  raw: OfficeFreeEmployees[]
+): OfficeFreeEmployees[] {
+  if (!Array.isArray(raw) || raw.length === 0) return [];
+  // 레거시 데이터: string[] → OfficeFreeEmployees[] 변환
+  if (typeof raw[0] === "string") {
+    return [
+      {
+        officeId: null,
+        officeName: null,
+        employeeNames: raw as unknown as string[],
+      },
+    ];
+  }
+  return raw;
+}
 
 function toDuty(row: typeof duties.$inferSelect): CleaningDuty {
   return {
     id: row.id,
     month: row.month,
     assignments: row.assignments,
-    freeEmployeeNames: row.freeEmployeeNames,
+    freeEmployees: normalizeFreeEmployees(row.freeEmployees),
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -29,7 +46,7 @@ export async function getDutyByMonth(
 export async function upsertDuty(input: {
   month: string;
   assignments: DutyAssignment[];
-  freeEmployeeNames: string[];
+  freeEmployees: OfficeFreeEmployees[];
 }): Promise<CleaningDuty> {
   const [row] = await db
     .insert(duties)
@@ -37,13 +54,13 @@ export async function upsertDuty(input: {
       id: generateId(),
       month: input.month,
       assignments: input.assignments,
-      freeEmployeeNames: input.freeEmployeeNames,
+      freeEmployees: input.freeEmployees,
     })
     .onConflictDoUpdate({
       target: duties.month,
       set: {
         assignments: input.assignments,
-        freeEmployeeNames: input.freeEmployeeNames,
+        freeEmployees: input.freeEmployees,
         createdAt: new Date(),
       },
     })
