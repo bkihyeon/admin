@@ -83,7 +83,7 @@ async function main() {
       // 레거시: 문자열이 풀린 경우 {"0":"오","1":"하",...} → employeeNames 복원
       if (!f.employeeNames) {
         const numKeys = Object.keys(f).filter((k) => /^\d+$/.test(k)).sort((a, b) => +a - +b);
-        const name = numKeys.map((k) => (f as Record<string, string>)[k]).join("");
+        const name = numKeys.map((k) => (f as unknown as Record<string, string>)[k]).join("");
         changed = true;
         return {
           officeId: f.officeId || inferredId,
