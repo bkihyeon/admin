@@ -18,6 +18,15 @@ export async function listEmployees(): Promise<Employee[]> {
   return rows.map(toEmployee);
 }
 
+export async function listEmployeesByOffice(officeId: string): Promise<Employee[]> {
+  const rows = await db
+    .select()
+    .from(employees)
+    .where(eq(employees.officeId, officeId))
+    .orderBy(employees.createdAt);
+  return rows.map(toEmployee);
+}
+
 export async function createEmployee(input: {
   name: string;
   officeId?: string | null;

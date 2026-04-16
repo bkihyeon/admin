@@ -1,4 +1,4 @@
-import { Employee, DutyItem, DutyAssignment, Office, OfficeFreeEmployees } from "./types";
+import { Employee, DutyItem, DutyAssignment, OfficeFreeEmployees } from "./types";
 
 function shuffle<T>(array: T[]): T[] {
   const arr = [...array];
@@ -54,61 +54,16 @@ function assignItemsFromPool(
   return { assignments, freeEmployeeNames };
 }
 
-/** 사무실별 독립 배정. 각 사무실의 사원 풀에서 해당 사무실 품목에 배정. */
-export function assignDuties(
-  employees: Employee[],
-  dutyItems: DutyItem[],
-  offices: Office[]
-): { assignments: DutyAssignment[]; freeEmployees: OfficeFreeEmployees[] } {
-  const officeMap = new Map(offices.map((o) => [o.id, o.name]));
-
-  // officeId 기준으로 그룹핑 (null = 미분류)
-  const officeIds = new Set<string | null>();
-  for (const e of employees) officeIds.add(e.officeId);
-  for (const d of dutyItems) officeIds.add(d.officeId);
-
-  const allAssignments: DutyAssignment[] = [];
-  const allFreeEmployees: OfficeFreeEmployees[] = [];
-
-  for (const oid of officeIds) {
-    const officeEmployees = employees.filter((e) => e.officeId === oid);
-    const officeItems = dutyItems.filter((d) => d.officeId === oid);
-    const officeName = oid ? (officeMap.get(oid) ?? null) : null;
-
-    const { assignments, freeEmployeeNames } = assignItemsFromPool(
-      officeEmployees,
-      officeItems,
-      oid,
-      officeName
-    );
-
-    allAssignments.push(...assignments);
-
-    if (freeEmployeeNames.length > 0) {
-      allFreeEmployees.push({
-        officeId: oid,
-        officeName,
-        employeeNames: freeEmployeeNames,
-      });
-    }
-  }
-
-  return { assignments: allAssignments, freeEmployees: allFreeEmployees };
-}
-
-/** 단일 사무실 배정. 해당 사무실 사원/품목만 대상. */
+/** 단일 사무실 배정. 이미 해당 사무실로 필터된 사원/품목을 받는다. */
 export function assignDutiesForOffice(
   employees: Employee[],
   dutyItems: DutyItem[],
   officeId: string,
   officeName: string
 ): { assignments: DutyAssignment[]; freeEmployees: OfficeFreeEmployees | null } {
-  const officeEmployees = employees.filter((e) => e.officeId === officeId);
-  const officeItems = dutyItems.filter((d) => d.officeId === officeId);
-
   const { assignments, freeEmployeeNames } = assignItemsFromPool(
-    officeEmployees,
-    officeItems,
+    employees,
+    dutyItems,
     officeId,
     officeName
   );

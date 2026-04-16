@@ -7,7 +7,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 const sizeClasses: Record<InputSize, string> = {
-  md: "px-4 py-2.5 bg-surface-secondary border-border",
+  md: "h-10 px-4 bg-surface-secondary border-border",
   sm: "px-3 py-1.5 bg-surface border-primary-200",
 };
 

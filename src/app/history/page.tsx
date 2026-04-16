@@ -1,46 +1,33 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
-import { CleaningDuty, DutyAssignment } from "@/lib/types";
+import { useEffect, useState } from "react";
+import { useOffice } from "@/contexts/OfficeContext";
+import { CleaningDuty } from "@/lib/types";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
-import { Clock, Building2 } from "lucide-react";
-
-function groupByOffice(assignments: DutyAssignment[]): Map<string, { officeName: string | null; items: DutyAssignment[] }> {
-  const groups = new Map<string, { officeName: string | null; items: DutyAssignment[] }>();
-  for (const a of assignments) {
-    const key = a.officeId ?? "__none__";
-    if (!groups.has(key)) {
-      groups.set(key, { officeName: a.officeName, items: [] });
-    }
-    groups.get(key)!.items.push(a);
-  }
-  return groups;
-}
+import { Clock } from "lucide-react";
 
 export default function HistoryPage() {
+  const { selectedOfficeId } = useOffice();
   const [duties, setDuties] = useState<CleaningDuty[]>([]);
   const [selectedMonth, setSelectedMonth] = useState("");
 
   useEffect(() => {
-    fetch("/api/duties")
+    if (!selectedOfficeId) return;
+    fetch(`/api/duties?officeId=${selectedOfficeId}`)
       .then((r) => r.json())
       .then((data: CleaningDuty[]) => {
         setDuties(data);
         if (data.length > 0) setSelectedMonth(data[0].month);
+        else setSelectedMonth("");
       });
-  }, []);
+  }, [selectedOfficeId]);
 
   const selectedDuty = duties.find((d) => d.month === selectedMonth);
   const months = duties.map((d) => d.month);
-
-  type OfficeGroup = Map<string, { officeName: string | null; items: DutyAssignment[] }>;
-  const officeGroups = useMemo<OfficeGroup>(
-    () => (selectedDuty ? groupByOffice(selectedDuty.assignments) : new Map()),
-    [selectedDuty]
-  );
+  const freeEmployees = selectedDuty?.freeEmployees?.[0];
 
   return (
     <div className="space-y-6">
@@ -80,44 +67,32 @@ export default function HistoryPage() {
                 {selectedDuty.month} 청소 배정
               </h3>
 
-              {Array.from(officeGroups.entries()).map(([key, { officeName, items }]) => (
-                <div key={key} className="mb-5 last:mb-0">
-                  <h4 className="text-sm font-semibold text-text-secondary mb-3 flex items-center gap-2">
-                    <Building2 size={14} className="text-primary-400" />
-                    {officeName ?? "미분류"}
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {items.map((a) => (
-                      <div
-                        key={a.dutyItemId}
-                        className="rounded-lg bg-surface-secondary border border-border-light p-4"
-                      >
-                        <div className="text-sm font-semibold text-text-primary mb-2">
-                          {a.dutyItemName}
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {a.assignedEmployeeNames.map((name, i) => (
-                            <Badge key={i} variant="neutral">{name}</Badge>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {selectedDuty.assignments.map((a) => (
+                  <div
+                    key={a.dutyItemId}
+                    className="rounded-lg bg-surface-secondary border border-border-light p-4"
+                  >
+                    <div className="text-sm font-semibold text-text-primary mb-2">
+                      {a.dutyItemName}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {a.assignedEmployeeNames.map((name, i) => (
+                        <Badge key={i} variant="neutral">{name}</Badge>
+                      ))}
+                    </div>
                   </div>
-                  {/* 해당 사무실의 프리 사원 */}
-                  {selectedDuty.freeEmployees
-                    ?.filter((f) => (f.officeId ?? "__none__") === key)
-                    .map((f) =>
-                      f.employeeNames.length > 0 ? (
-                        <div key={`free-${key}`} className="mt-2 flex items-center gap-2 flex-wrap">
-                          <span className="text-xs text-text-tertiary font-medium">프리:</span>
-                          {f.employeeNames.map((name, i) => (
-                            <Badge key={i} variant="neutral">{name}</Badge>
-                          ))}
-                        </div>
-                      ) : null
-                    )}
+                ))}
+              </div>
+
+              {freeEmployees && freeEmployees.employeeNames.length > 0 && (
+                <div className="mt-3 flex items-center gap-2 flex-wrap">
+                  <span className="text-xs text-text-tertiary font-medium">프리:</span>
+                  {freeEmployees.employeeNames.map((name, i) => (
+                    <Badge key={i} variant="neutral">{name}</Badge>
+                  ))}
                 </div>
-              ))}
+              )}
 
               <p className="mt-4 text-xs text-text-tertiary flex items-center gap-1.5">
                 <Clock size={14} />

@@ -1,84 +1,42 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { DutyItem, Office } from "@/lib/types";
+import { useEffect, useState, useCallback } from "react";
+import { useOffice } from "@/contexts/OfficeContext";
+import { DutyItem } from "@/lib/types";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import Input from "@/components/ui/Input";
-import { PlusCircle, Pencil, Trash2, Settings, Building2 } from "lucide-react";
+import { PlusCircle, Pencil, Trash2, Settings } from "lucide-react";
 
 export default function SettingsPage() {
+  const { selectedOfficeId } = useOffice();
   const [items, setItems] = useState<DutyItem[]>([]);
-  const [offices, setOffices] = useState<Office[]>([]);
   const [name, setName] = useState("");
   const [count, setCount] = useState(1);
-  const [officeId, setOfficeId] = useState<string>("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editCount, setEditCount] = useState(1);
-  const [editOfficeId, setEditOfficeId] = useState<string>("");
 
-  // 사무실 관리
-  const [officeName, setOfficeName] = useState("");
-  const [editingOfficeId, setEditingOfficeId] = useState<string | null>(null);
-  const [editOfficeName, setEditOfficeName] = useState("");
-
-  const fetchItems = () => {
-    fetch("/api/duty-items").then((r) => r.json()).then(setItems);
-  };
-
-  const fetchOffices = () => {
-    fetch("/api/offices").then((r) => r.json()).then(setOffices);
-  };
+  const fetchItems = useCallback(() => {
+    if (!selectedOfficeId) return;
+    fetch(`/api/duty-items?officeId=${selectedOfficeId}`).then((r) => r.json()).then(setItems);
+  }, [selectedOfficeId]);
 
   useEffect(() => {
     fetchItems();
-    fetchOffices();
-  }, []);
+  }, [fetchItems]);
 
-  // 사무실 CRUD
-  const handleAddOffice = async () => {
-    if (!officeName.trim()) return;
-    await fetch("/api/offices", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: officeName }),
-    });
-    setOfficeName("");
-    fetchOffices();
-  };
-
-  const handleUpdateOffice = async (id: string) => {
-    if (!editOfficeName.trim()) return;
-    await fetch(`/api/offices/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: editOfficeName }),
-    });
-    setEditingOfficeId(null);
-    fetchOffices();
-  };
-
-  const handleDeleteOffice = async (id: string, name: string) => {
-    if (!confirm(`"${name}" 사무실을 삭제하시겠습니까?\n소속 사원/항목의 사무실이 해제됩니다.`)) return;
-    await fetch(`/api/offices/${id}`, { method: "DELETE" });
-    fetchOffices();
-    fetchItems();
-  };
-
-  // 담당항목 CRUD
   const handleAdd = async () => {
-    if (!name.trim()) return;
+    if (!name.trim() || !selectedOfficeId) return;
     await fetch("/api/duty-items", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, requiredCount: count, officeId: officeId || null }),
+      body: JSON.stringify({ name, requiredCount: count, officeId: selectedOfficeId }),
     });
     setName("");
     setCount(1);
-    setOfficeId("");
     fetchItems();
   };
 
@@ -87,7 +45,7 @@ export default function SettingsPage() {
     await fetch(`/api/duty-items/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: editName, requiredCount: editCount, officeId: editOfficeId || null }),
+      body: JSON.stringify({ name: editName, requiredCount: editCount, officeId: selectedOfficeId }),
     });
     setEditingId(null);
     fetchItems();
@@ -99,74 +57,10 @@ export default function SettingsPage() {
     fetchItems();
   };
 
-  const getOfficeName = (oid: string | null) =>
-    offices.find((o) => o.id === oid)?.name ?? null;
-
   return (
     <div className="space-y-6">
-      <PageHeader title="설정" />
+      <PageHeader title="담당항목 설정" />
 
-      {/* 사무실 관리 */}
-      <Card className="p-6">
-        <h3 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-2">
-          <Building2 size={16} className="text-primary-500" />
-          사무실 관리
-        </h3>
-        <div className="flex gap-3 mb-4">
-          <Input
-            type="text"
-            value={officeName}
-            onChange={(e) => setOfficeName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && handleAddOffice()}
-            placeholder="사무실 이름 입력"
-            className="flex-1"
-          />
-          <Button onClick={handleAddOffice}>추가</Button>
-        </div>
-        {offices.length > 0 && (
-          <div className="space-y-2">
-            {offices.map((office) => (
-              <div
-                key={office.id}
-                className="flex items-center justify-between py-2 px-3 rounded-lg bg-surface-secondary"
-              >
-                {editingOfficeId === office.id ? (
-                  <Input
-                    inputSize="sm"
-                    type="text"
-                    value={editOfficeName}
-                    onChange={(e) => setEditOfficeName(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && handleUpdateOffice(office.id)}
-                    autoFocus
-                    className="flex-1 mr-2"
-                  />
-                ) : (
-                  <span className="text-sm font-medium text-text-primary">{office.name}</span>
-                )}
-                <div className="flex items-center gap-2">
-                  {editingOfficeId === office.id ? (
-                    <>
-                      <Button size="sm" onClick={() => handleUpdateOffice(office.id)}>저장</Button>
-                      <Button variant="ghost" size="sm" onClick={() => setEditingOfficeId(null)}>취소</Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button variant="ghost" size="sm" onClick={() => { setEditingOfficeId(office.id); setEditOfficeName(office.name); }}>
-                        <Pencil size={14} />
-                      </Button>
-                      <Button variant="danger" size="sm" onClick={() => handleDeleteOffice(office.id, office.name)}>
-                        <Trash2 size={14} />
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
-
-      {/* 담당항목 관리 */}
       <Card className="p-6">
         <h3 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-2">
           <PlusCircle size={16} className="text-primary-500" />
@@ -194,19 +88,6 @@ export default function SettingsPage() {
               className="w-full text-center"
             />
           </div>
-          <div className="w-36">
-            <label className="block text-xs font-medium text-text-secondary mb-1.5">사무실</label>
-            <select
-              value={officeId}
-              onChange={(e) => setOfficeId(e.target.value)}
-              className="w-full h-10 rounded-lg border border-border-light bg-white px-3 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
-            >
-              <option value="">미지정</option>
-              {offices.map((o) => (
-                <option key={o.id} value={o.id}>{o.name}</option>
-              ))}
-            </select>
-          </div>
           <Button onClick={handleAdd}>추가</Button>
         </div>
       </Card>
@@ -224,7 +105,6 @@ export default function SettingsPage() {
               <tr className="bg-surface-tertiary/50">
                 <th className="text-left py-3 px-5 text-xs font-semibold text-text-tertiary uppercase tracking-wider">항목명</th>
                 <th className="text-center py-3 px-5 text-xs font-semibold text-text-tertiary uppercase tracking-wider w-24">인원수</th>
-                <th className="text-center py-3 px-5 text-xs font-semibold text-text-tertiary uppercase tracking-wider w-32">사무실</th>
                 <th className="text-right py-3 px-5 text-xs font-semibold text-text-tertiary uppercase tracking-wider w-40">관리</th>
               </tr>
             </thead>
@@ -265,24 +145,6 @@ export default function SettingsPage() {
                       </span>
                     )}
                   </td>
-                  <td className="py-4 px-5 text-center">
-                    {editingId === item.id ? (
-                      <select
-                        value={editOfficeId}
-                        onChange={(e) => setEditOfficeId(e.target.value)}
-                        className="w-full h-8 rounded-lg border border-border-light bg-white px-2 text-xs text-text-primary"
-                      >
-                        <option value="">미지정</option>
-                        {offices.map((o) => (
-                          <option key={o.id} value={o.id}>{o.name}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <span className={`text-xs ${getOfficeName(item.officeId) ? "text-text-primary font-medium" : "text-text-tertiary"}`}>
-                        {getOfficeName(item.officeId) ?? "미지정"}
-                      </span>
-                    )}
-                  </td>
                   <td className="py-4 px-5 text-right">
                     <div className="flex items-center justify-end gap-2">
                       {editingId === item.id ? (
@@ -292,7 +154,7 @@ export default function SettingsPage() {
                         </>
                       ) : (
                         <>
-                          <Button variant="ghost" size="sm" onClick={() => { setEditingId(item.id); setEditName(item.name); setEditCount(item.requiredCount); setEditOfficeId(item.officeId ?? ""); }}>
+                          <Button variant="ghost" size="sm" onClick={() => { setEditingId(item.id); setEditName(item.name); setEditCount(item.requiredCount); }}>
                             <Pencil size={14} /> 수정
                           </Button>
                           <Button variant="danger" size="sm" onClick={() => handleDelete(item.id, item.name)}>

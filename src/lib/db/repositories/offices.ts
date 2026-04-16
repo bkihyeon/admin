@@ -17,6 +17,11 @@ export async function listOffices(): Promise<Office[]> {
   return rows.map(toOffice);
 }
 
+export async function getOfficeById(id: string): Promise<Office | null> {
+  const [row] = await db.select().from(offices).where(eq(offices.id, id));
+  return row ? toOffice(row) : null;
+}
+
 export async function createOffice(name: string): Promise<Office> {
   const [row] = await db
     .insert(offices)

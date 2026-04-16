@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Employee, Office } from "@/lib/types";
+import { useEffect, useState, useCallback } from "react";
+import { useOffice } from "@/contexts/OfficeContext";
+import { Employee } from "@/lib/types";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import PageHeader from "@/components/ui/PageHeader";
@@ -10,36 +11,30 @@ import Input from "@/components/ui/Input";
 import { PlusCircle, Pencil, Trash2, Users } from "lucide-react";
 
 export default function EmployeesPage() {
+  const { selectedOfficeId, offices } = useOffice();
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [offices, setOffices] = useState<Office[]>([]);
   const [name, setName] = useState("");
-  const [officeId, setOfficeId] = useState<string>("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editOfficeId, setEditOfficeId] = useState<string>("");
 
-  const fetchEmployees = () => {
-    fetch("/api/employees").then((r) => r.json()).then(setEmployees);
-  };
-
-  const fetchOffices = () => {
-    fetch("/api/offices").then((r) => r.json()).then(setOffices);
-  };
+  const fetchEmployees = useCallback(() => {
+    if (!selectedOfficeId) return;
+    fetch(`/api/employees?officeId=${selectedOfficeId}`).then((r) => r.json()).then(setEmployees);
+  }, [selectedOfficeId]);
 
   useEffect(() => {
     fetchEmployees();
-    fetchOffices();
-  }, []);
+  }, [fetchEmployees]);
 
   const handleAdd = async () => {
-    if (!name.trim()) return;
+    if (!name.trim() || !selectedOfficeId) return;
     await fetch("/api/employees", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, officeId: officeId || null }),
+      body: JSON.stringify({ name, officeId: selectedOfficeId }),
     });
     setName("");
-    setOfficeId("");
     fetchEmployees();
   };
 
@@ -83,19 +78,6 @@ export default function EmployeesPage() {
               placeholder="이름 입력"
               className="w-full"
             />
-          </div>
-          <div className="w-36">
-            <label className="block text-xs font-medium text-text-secondary mb-1.5">사무실</label>
-            <select
-              value={officeId}
-              onChange={(e) => setOfficeId(e.target.value)}
-              className="w-full h-10 rounded-lg border border-border-light bg-white px-3 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
-            >
-              <option value="">미지정</option>
-              {offices.map((o) => (
-                <option key={o.id} value={o.id}>{o.name}</option>
-              ))}
-            </select>
           </div>
           <Button onClick={handleAdd}>등록</Button>
         </div>

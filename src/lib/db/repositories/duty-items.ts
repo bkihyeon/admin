@@ -8,6 +8,10 @@ export async function listDutyItems(): Promise<DutyItem[]> {
   return db.select().from(dutyItems);
 }
 
+export async function listDutyItemsByOffice(officeId: string): Promise<DutyItem[]> {
+  return db.select().from(dutyItems).where(eq(dutyItems.officeId, officeId));
+}
+
 export async function createDutyItem(input: {
   name: string;
   requiredCount: number;

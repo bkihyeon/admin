@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Sidebar from "@/components/ui/Sidebar";
+import ClientLayout from "@/components/ClientLayout";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,12 +15,7 @@ export default function RootLayout({
   return (
     <html lang="ko" className="antialiased">
       <body className="min-h-screen">
-        <Sidebar />
-        <main className="ml-60 min-h-screen px-8 py-8">
-          <div className="max-w-5xl animate-[fade-in-up_0.4s_ease-out]">
-            {children}
-          </div>
-        </main>
+        <ClientLayout>{children}</ClientLayout>
       </body>
     </html>
   );

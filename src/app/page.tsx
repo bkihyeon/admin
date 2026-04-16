@@ -1,26 +1,16 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { CleaningDuty, DutyAssignment } from "@/lib/types";
+import { useOffice } from "@/contexts/OfficeContext";
+import { CleaningDuty } from "@/lib/types";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
-import { ClipboardCheck, Users, Clipboard, Building2 } from "lucide-react";
-
-function groupByOffice(assignments: DutyAssignment[]): Map<string, { officeName: string | null; items: DutyAssignment[] }> {
-  const groups = new Map<string, { officeName: string | null; items: DutyAssignment[] }>();
-  for (const a of assignments) {
-    const key = a.officeId ?? "__none__";
-    if (!groups.has(key)) {
-      groups.set(key, { officeName: a.officeName, items: [] });
-    }
-    groups.get(key)!.items.push(a);
-  }
-  return groups;
-}
+import { ClipboardCheck, Users, Clipboard } from "lucide-react";
 
 export default function Dashboard() {
+  const { selectedOfficeId } = useOffice();
   const [duty, setDuty] = useState<CleaningDuty | null>(null);
 
   const currentMonth = useMemo(() => new Date().toISOString().slice(0, 7), []);
@@ -36,23 +26,21 @@ export default function Dashboard() {
   );
 
   useEffect(() => {
-    fetch(`/api/duties?month=${currentMonth}`)
+    if (!selectedOfficeId) return;
+    fetch(`/api/duties?month=${currentMonth}&officeId=${selectedOfficeId}`)
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) setDuty(data[0]);
+        else setDuty(null);
       });
-  }, [currentMonth]);
+  }, [currentMonth, selectedOfficeId]);
 
   const totalAssigned = duty?.assignments.reduce(
     (sum, a) => sum + a.assignedEmployeeNames.length,
     0
   ) ?? 0;
 
-  type OfficeGroup = Map<string, { officeName: string | null; items: DutyAssignment[] }>;
-  const officeGroups = useMemo<OfficeGroup>(
-    () => (duty ? groupByOffice(duty.assignments) : new Map()),
-    [duty]
-  );
+  const freeEmployees = duty?.freeEmployees?.[0];
 
   return (
     <div className="space-y-8">
@@ -95,45 +83,33 @@ export default function Dashboard() {
           </h3>
           <Badge variant="neutral">{currentMonth}</Badge>
         </div>
-        {duty ? (
+        {duty && duty.assignments.length > 0 ? (
           <div className="space-y-5">
-            {Array.from(officeGroups.entries()).map(([key, { officeName, items }]) => (
-              <div key={key}>
-                <h4 className="text-sm font-semibold text-text-secondary mb-3 flex items-center gap-2">
-                  <Building2 size={14} className="text-primary-400" />
-                  {officeName ?? "미분류"}
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {items.map((a) => (
-                    <div
-                      key={a.dutyItemId}
-                      className="rounded-lg bg-gradient-to-br from-primary-50 to-primary-100/50 border border-primary-100 p-4"
-                    >
-                      <div className="text-sm font-semibold text-primary-800 mb-2">
-                        {a.dutyItemName}
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {a.assignedEmployeeNames.map((name, i) => (
-                          <Badge key={i} variant="primary">{name}</Badge>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {duty.assignments.map((a) => (
+                <div
+                  key={a.dutyItemId}
+                  className="rounded-lg bg-gradient-to-br from-primary-50 to-primary-100/50 border border-primary-100 p-4"
+                >
+                  <div className="text-sm font-semibold text-primary-800 mb-2">
+                    {a.dutyItemName}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {a.assignedEmployeeNames.map((name, i) => (
+                      <Badge key={i} variant="primary">{name}</Badge>
+                    ))}
+                  </div>
                 </div>
-                {duty.freeEmployees
-                  ?.filter((f) => (f.officeId ?? "__none__") === key)
-                  .map((f) =>
-                    f.employeeNames.length > 0 ? (
-                      <div key={`free-${key}`} className="mt-2 flex items-center gap-2 flex-wrap">
-                        <span className="text-xs text-text-tertiary font-medium">프리:</span>
-                        {f.employeeNames.map((name, i) => (
-                          <Badge key={i} variant="neutral">{name}</Badge>
-                        ))}
-                      </div>
-                    ) : null
-                  )}
+              ))}
+            </div>
+            {freeEmployees && freeEmployees.employeeNames.length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-text-tertiary font-medium">프리:</span>
+                {freeEmployees.employeeNames.map((name, i) => (
+                  <Badge key={i} variant="neutral">{name}</Badge>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         ) : (
           <EmptyState

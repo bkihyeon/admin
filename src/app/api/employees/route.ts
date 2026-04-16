@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
-import { listEmployees, createEmployee } from "@/lib/db/repositories/employees";
+import { listEmployees, listEmployeesByOffice, createEmployee } from "@/lib/db/repositories/employees";
 
-export async function GET() {
-  const employees = await listEmployees();
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const officeId = searchParams.get("officeId");
+
+  const employees = officeId
+    ? await listEmployeesByOffice(officeId)
+    : await listEmployees();
   return NextResponse.json(employees);
 }
 

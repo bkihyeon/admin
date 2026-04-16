@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
 import {
   listDutyItems,
+  listDutyItemsByOffice,
   createDutyItem,
 } from "@/lib/db/repositories/duty-items";
 
-export async function GET() {
-  const items = await listDutyItems();
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const officeId = searchParams.get("officeId");
+
+  const items = officeId
+    ? await listDutyItemsByOffice(officeId)
+    : await listDutyItems();
   return NextResponse.json(items);
 }
 
