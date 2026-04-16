@@ -10,12 +10,14 @@ import EmptyState from "@/components/ui/EmptyState";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
 import { Dices, Loader2, Clock, LayoutGrid } from "lucide-react";
+import CardFlipModal from "@/components/CardFlipModal";
 
 export default function DutiesPage() {
   const { selectedOfficeId, selectedOffice } = useOffice();
   const [duty, setDuty] = useState<CleaningDuty | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showFlipModal, setShowFlipModal] = useState(false);
 
   const [currentMonth] = useState(() => new Date().toISOString().slice(0, 7));
 
@@ -55,6 +57,8 @@ export default function DutiesPage() {
 
     setDuty(data.duty);
     if (data.warning) setWarning(data.warning);
+
+    setShowFlipModal(true);
   };
 
   const freeEmployees = duty?.freeEmployees?.[0];
@@ -113,6 +117,13 @@ export default function DutiesPage() {
             description="상단의 뽑기 버튼을 눌러 배정을 시작하세요."
           />
         </Card>
+      )}
+
+      {showFlipModal && duty && (
+        <CardFlipModal
+          duty={duty}
+          onClose={() => setShowFlipModal(false)}
+        />
       )}
     </div>
   );
