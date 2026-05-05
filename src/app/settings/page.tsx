@@ -1,61 +1,94 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useOffice } from "@/contexts/OfficeContext";
 import { DutyItem } from "@/lib/types";
+import { queryKeys } from "@/lib/query-keys";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import Input from "@/components/ui/Input";
+import SettingsSkeleton from "@/components/skeletons/SettingsSkeleton";
 import { PlusCircle, Pencil, Trash2, Settings } from "lucide-react";
 
 export default function SettingsPage() {
   const { selectedOfficeId } = useOffice();
-  const [items, setItems] = useState<DutyItem[]>([]);
+  const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [count, setCount] = useState(1);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editCount, setEditCount] = useState(1);
 
-  const fetchItems = useCallback(() => {
-    if (!selectedOfficeId) return;
-    fetch(`/api/duty-items?officeId=${selectedOfficeId}`).then((r) => r.json()).then(setItems);
-  }, [selectedOfficeId]);
+  const { data: items = [], isLoading } = useQuery({
+    queryKey: queryKeys.dutyItems(selectedOfficeId),
+    queryFn: async () => {
+      const res = await fetch(`/api/duty-items?officeId=${selectedOfficeId}`);
+      return res.json() as Promise<DutyItem[]>;
+    },
+    enabled: !!selectedOfficeId,
+  });
 
-  useEffect(() => {
-    fetchItems();
-  }, [fetchItems]);
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: queryKeys.dutyItems(selectedOfficeId) });
 
-  const handleAdd = async () => {
+  const addMutation = useMutation({
+    mutationFn: async () => {
+      await fetch("/api/duty-items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, requiredCount: count, officeId: selectedOfficeId }),
+      });
+    },
+    onSuccess: () => {
+      setName("");
+      setCount(1);
+      invalidate();
+    },
+    onError: () => alert("항목 추가에 실패했습니다."),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await fetch(`/api/duty-items/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editName, requiredCount: editCount, officeId: selectedOfficeId }),
+      });
+    },
+    onSuccess: () => {
+      setEditingId(null);
+      invalidate();
+    },
+    onError: () => alert("항목 수정에 실패했습니다."),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await fetch(`/api/duty-items/${id}`, { method: "DELETE" });
+    },
+    onSuccess: () => invalidate(),
+    onError: () => alert("항목 삭제에 실패했습니다."),
+  });
+
+  const handleAdd = () => {
     if (!name.trim() || !selectedOfficeId) return;
-    await fetch("/api/duty-items", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, requiredCount: count, officeId: selectedOfficeId }),
-    });
-    setName("");
-    setCount(1);
-    fetchItems();
+    addMutation.mutate();
   };
 
-  const handleUpdate = async (id: string) => {
+  const handleUpdate = (id: string) => {
     if (!editName.trim()) return;
-    await fetch(`/api/duty-items/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: editName, requiredCount: editCount, officeId: selectedOfficeId }),
-    });
-    setEditingId(null);
-    fetchItems();
+    updateMutation.mutate(id);
   };
 
-  const handleDelete = async (id: string, itemName: string) => {
+  const handleDelete = (id: string, itemName: string) => {
     if (!confirm(`"${itemName}" 항목을 삭제하시겠습니까?`)) return;
-    await fetch(`/api/duty-items/${id}`, { method: "DELETE" });
-    fetchItems();
+    deleteMutation.mutate(id);
   };
+
+  if (isLoading) return <SettingsSkeleton />;
 
   return (
     <div className="space-y-6">
@@ -123,6 +156,7 @@ export default function SettingsPage() {
                         type="text"
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && handleUpdate(item.id)}
                         autoFocus
                       />
                     ) : (
@@ -136,6 +170,7 @@ export default function SettingsPage() {
                         type="number"
                         value={editCount}
                         onChange={(e) => setEditCount(Math.max(1, Number(e.target.value)))}
+                        onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && handleUpdate(item.id)}
                         min={1}
                         className="w-16 text-center"
                       />

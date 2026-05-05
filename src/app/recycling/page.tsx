@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { RecyclingState } from "@/lib/types";
+import { queryKeys } from "@/lib/query-keys";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
+import RecyclingSkeleton from "@/components/skeletons/RecyclingSkeleton";
 import { RefreshCw, Loader2, Clock, Info, Recycle } from "lucide-react";
 
 interface RecyclingResponse extends RecyclingState {
@@ -15,45 +17,51 @@ interface RecyclingResponse extends RecyclingState {
 }
 
 export default function RecyclingPage() {
-  const [state, setState] = useState<RecyclingResponse | null>(null);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
 
-  const fetchRecycling = () => {
-    fetch("/api/recycling")
-      .then((r) => r.json())
-      .then(setState);
-  };
+  const { data: state, isLoading } = useQuery({
+    queryKey: queryKeys.recycling,
+    queryFn: async () => {
+      const res = await fetch("/api/recycling");
+      return res.json() as Promise<RecyclingResponse>;
+    },
+  });
 
-  useEffect(() => {
-    fetchRecycling();
-  }, []);
+  const generateMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/recycling", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      return data as RecyclingState;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(queryKeys.recycling, {
+        ...data,
+        totalEmployees: state?.totalEmployees ?? 0,
+      });
+    },
+    onError: (err: Error) => {
+      alert(err.message);
+    },
+  });
 
-  const handleGenerate = async () => {
+  const handleGenerate = () => {
     if (
       state?.schedule.length &&
       !confirm("새로운 4주 로테이션을 생성하시겠습니까? 현재 스케줄이 교체됩니다.")
     )
       return;
-
-    setLoading(true);
-    const res = await fetch("/api/recycling", { method: "POST" });
-    const data = await res.json();
-    setLoading(false);
-
-    if (!res.ok) {
-      alert(data.error);
-      return;
-    }
-
-    setState({ ...data, totalEmployees: state?.totalEmployees ?? 0 });
+    generateMutation.mutate();
   };
+
+  if (isLoading) return <RecyclingSkeleton />;
 
   return (
     <div className="space-y-6">
       <PageHeader title="분리수거 관리">
-        <Button variant="gradient-success" size="lg" onClick={handleGenerate} disabled={loading}>
-          {loading ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={18} />}
-          {loading ? "생성 중..." : "다음 로테이션 생성"}
+        <Button variant="gradient-success" size="lg" onClick={handleGenerate} disabled={generateMutation.isPending}>
+          {generateMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={18} />}
+          {generateMutation.isPending ? "생성 중..." : "다음 로테이션 생성"}
         </Button>
       </PageHeader>
 

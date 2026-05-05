@@ -1,18 +1,19 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useOffice } from "@/contexts/OfficeContext";
 import { CleaningDuty } from "@/lib/types";
+import { queryKeys } from "@/lib/query-keys";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
+import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
 import { ClipboardCheck, Users, Clipboard } from "lucide-react";
 
 export default function Dashboard() {
   const { selectedOfficeId } = useOffice();
-  const [duty, setDuty] = useState<CleaningDuty | null>(null);
-
   const currentMonth = useMemo(() => new Date().toISOString().slice(0, 7), []);
   const today = useMemo(
     () =>
@@ -25,15 +26,19 @@ export default function Dashboard() {
     []
   );
 
-  useEffect(() => {
-    if (!selectedOfficeId) return;
-    fetch(`/api/duties?month=${currentMonth}&officeId=${selectedOfficeId}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data) && data.length > 0) setDuty(data[0]);
-        else setDuty(null);
-      });
-  }, [currentMonth, selectedOfficeId]);
+  const { data, isLoading } = useQuery({
+    queryKey: queryKeys.duties(selectedOfficeId, currentMonth),
+    queryFn: async () => {
+      const res = await fetch(`/api/duties?month=${currentMonth}&officeId=${selectedOfficeId}`);
+      const data: CleaningDuty[] = await res.json();
+      return Array.isArray(data) && data.length > 0 ? data[0] : null;
+    },
+    enabled: !!selectedOfficeId,
+  });
+
+  const duty = data ?? null;
+
+  if (isLoading) return <DashboardSkeleton />;
 
   const totalAssigned = duty?.assignments.reduce(
     (sum, a) => sum + a.assignedEmployeeNames.length,

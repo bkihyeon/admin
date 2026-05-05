@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useOffice } from "@/contexts/OfficeContext";
+import { queryKeys } from "@/lib/query-keys";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import PageHeader from "@/components/ui/PageHeader";
@@ -10,37 +12,66 @@ import Input from "@/components/ui/Input";
 import { Building2, PlusCircle, Pencil, Trash2 } from "lucide-react";
 
 export default function OfficesPage() {
-  const { offices, refreshOffices } = useOffice();
+  const { offices } = useOffice();
+  const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
 
-  const handleAdd = async () => {
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: queryKeys.offices });
+
+  const addMutation = useMutation({
+    mutationFn: async () => {
+      await fetch("/api/offices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+    },
+    onSuccess: () => {
+      setName("");
+      invalidate();
+    },
+    onError: () => alert("사무실 추가에 실패했습니다."),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await fetch(`/api/offices/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editName }),
+      });
+    },
+    onSuccess: () => {
+      setEditingId(null);
+      invalidate();
+    },
+    onError: () => alert("사무실 수정에 실패했습니다."),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await fetch(`/api/offices/${id}`, { method: "DELETE" });
+    },
+    onSuccess: () => invalidate(),
+    onError: () => alert("사무실 삭제에 실패했습니다."),
+  });
+
+  const handleAdd = () => {
     if (!name.trim()) return;
-    await fetch("/api/offices", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
-    setName("");
-    refreshOffices();
+    addMutation.mutate();
   };
 
-  const handleUpdate = async (id: string) => {
+  const handleUpdate = (id: string) => {
     if (!editName.trim()) return;
-    await fetch(`/api/offices/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: editName }),
-    });
-    setEditingId(null);
-    refreshOffices();
+    updateMutation.mutate(id);
   };
 
-  const handleDelete = async (id: string, officeName: string) => {
+  const handleDelete = (id: string, officeName: string) => {
     if (!confirm(`"${officeName}" 사무실을 삭제하시겠습니까?\n소속 사원/항목의 사무실이 해제됩니다.`)) return;
-    await fetch(`/api/offices/${id}`, { method: "DELETE" });
-    refreshOffices();
+    deleteMutation.mutate(id);
   };
 
   return (

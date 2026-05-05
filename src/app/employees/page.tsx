@@ -1,62 +1,97 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useOffice } from "@/contexts/OfficeContext";
 import { Employee } from "@/lib/types";
+import { queryKeys } from "@/lib/query-keys";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import Input from "@/components/ui/Input";
+import EmployeesSkeleton from "@/components/skeletons/EmployeesSkeleton";
 import { PlusCircle, Pencil, Trash2, Users } from "lucide-react";
 
 export default function EmployeesPage() {
   const { selectedOfficeId, offices } = useOffice();
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editOfficeId, setEditOfficeId] = useState<string>("");
 
-  const fetchEmployees = useCallback(() => {
-    if (!selectedOfficeId) return;
-    fetch(`/api/employees?officeId=${selectedOfficeId}`).then((r) => r.json()).then(setEmployees);
-  }, [selectedOfficeId]);
+  const { data: employees = [], isLoading } = useQuery({
+    queryKey: queryKeys.employees(selectedOfficeId),
+    queryFn: async () => {
+      const res = await fetch(`/api/employees?officeId=${selectedOfficeId}`);
+      return res.json() as Promise<Employee[]>;
+    },
+    enabled: !!selectedOfficeId,
+  });
 
-  useEffect(() => {
-    fetchEmployees();
-  }, [fetchEmployees]);
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.employees(selectedOfficeId) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.recycling });
+  };
 
-  const handleAdd = async () => {
+  const addMutation = useMutation({
+    mutationFn: async () => {
+      await fetch("/api/employees", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, officeId: selectedOfficeId }),
+      });
+    },
+    onSuccess: () => {
+      setName("");
+      invalidate();
+    },
+    onError: () => alert("사원 등록에 실패했습니다."),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await fetch(`/api/employees/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editName, officeId: editOfficeId || null }),
+      });
+    },
+    onSuccess: () => {
+      setEditingId(null);
+      invalidate();
+    },
+    onError: () => alert("사원 수정에 실패했습니다."),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await fetch(`/api/employees/${id}`, { method: "DELETE" });
+    },
+    onSuccess: () => invalidate(),
+    onError: () => alert("사원 삭제에 실패했습니다."),
+  });
+
+  const handleAdd = () => {
     if (!name.trim() || !selectedOfficeId) return;
-    await fetch("/api/employees", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, officeId: selectedOfficeId }),
-    });
-    setName("");
-    fetchEmployees();
+    addMutation.mutate();
   };
 
-  const handleUpdate = async (id: string) => {
+  const handleUpdate = (id: string) => {
     if (!editName.trim()) return;
-    await fetch(`/api/employees/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: editName, officeId: editOfficeId || null }),
-    });
-    setEditingId(null);
-    fetchEmployees();
+    updateMutation.mutate(id);
   };
 
-  const handleDelete = async (id: string, employeeName: string) => {
+  const handleDelete = (id: string, employeeName: string) => {
     if (!confirm(`"${employeeName}" 사원을 삭제하시겠습니까?`)) return;
-    await fetch(`/api/employees/${id}`, { method: "DELETE" });
-    fetchEmployees();
+    deleteMutation.mutate(id);
   };
 
   const getOfficeName = (oid: string | null) =>
     offices.find((o) => o.id === oid)?.name ?? null;
+
+  if (isLoading) return <EmployeesSkeleton />;
 
   return (
     <div className="space-y-6">

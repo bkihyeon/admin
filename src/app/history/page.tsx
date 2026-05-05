@@ -1,33 +1,38 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useOffice } from "@/contexts/OfficeContext";
 import { CleaningDuty } from "@/lib/types";
+import { queryKeys } from "@/lib/query-keys";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
+import HistorySkeleton from "@/components/skeletons/HistorySkeleton";
 import { Clock } from "lucide-react";
 
 export default function HistoryPage() {
   const { selectedOfficeId } = useOffice();
-  const [duties, setDuties] = useState<CleaningDuty[]>([]);
-  const [selectedMonth, setSelectedMonth] = useState("");
+  // 사용자가 직접 선택한 월 (없으면 첫 항목으로 파생)
+  const [pickedMonth, setPickedMonth] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!selectedOfficeId) return;
-    fetch(`/api/duties?officeId=${selectedOfficeId}`)
-      .then((r) => r.json())
-      .then((data: CleaningDuty[]) => {
-        setDuties(data);
-        if (data.length > 0) setSelectedMonth(data[0].month);
-        else setSelectedMonth("");
-      });
-  }, [selectedOfficeId]);
+  const { data: duties = [], isLoading } = useQuery({
+    queryKey: queryKeys.duties(selectedOfficeId),
+    queryFn: async () => {
+      const res = await fetch(`/api/duties?officeId=${selectedOfficeId}`);
+      return res.json() as Promise<CleaningDuty[]>;
+    },
+    enabled: !!selectedOfficeId,
+  });
 
+  const pickedValid = pickedMonth && duties.some((d) => d.month === pickedMonth);
+  const selectedMonth = pickedValid ? pickedMonth : duties[0]?.month ?? "";
   const selectedDuty = duties.find((d) => d.month === selectedMonth);
   const months = duties.map((d) => d.month);
   const freeEmployees = selectedDuty?.freeEmployees?.[0];
+
+  if (isLoading) return <HistorySkeleton />;
 
   return (
     <div className="space-y-6">
@@ -49,7 +54,7 @@ export default function HistoryPage() {
             {months.map((m) => (
               <button
                 key={m}
-                onClick={() => setSelectedMonth(m)}
+                onClick={() => setPickedMonth(m)}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                   selectedMonth === m
                     ? "bg-primary-600 text-white shadow-button"

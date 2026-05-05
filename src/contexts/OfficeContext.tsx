@@ -1,7 +1,9 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Office } from "@/lib/types";
+import { queryKeys } from "@/lib/query-keys";
 
 interface OfficeContextValue {
   offices: Office[];
@@ -17,46 +19,49 @@ const OfficeContext = createContext<OfficeContextValue | null>(null);
 const STORAGE_KEY = "selectedOfficeId";
 
 export function OfficeProvider({ children }: { children: ReactNode }) {
-  const [offices, setOffices] = useState<Office[]>([]);
-  const [selectedOfficeId, setSelectedOfficeIdState] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  // 사용자가 직접 선택했거나 localStorage에서 복원한 ID. offices에 없으면 파생 단계에서 fallback
+  const [pickedOfficeId, setPickedOfficeIdState] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem(STORAGE_KEY) ?? null;
+    }
+    return null;
+  });
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/offices")
-      .then((r) => r.json())
-      .then((data: Office[]) => {
-        if (cancelled) return;
-        setOffices(data);
-        const stored = localStorage.getItem(STORAGE_KEY);
-        const valid = stored && data.some((o) => o.id === stored);
-        if (valid) {
-          setSelectedOfficeIdState(stored);
-        } else if (data.length > 0) {
-          setSelectedOfficeIdState(data[0].id);
-          localStorage.setItem(STORAGE_KEY, data[0].id);
-        }
-        setLoading(false);
-      });
-    return () => { cancelled = true; };
-  }, []);
+  const { data: offices = [], isLoading } = useQuery({
+    queryKey: queryKeys.offices,
+    queryFn: async () => {
+      const res = await fetch("/api/offices");
+      return res.json() as Promise<Office[]>;
+    },
+  });
 
-  const setSelectedOfficeId = (id: string) => {
-    setSelectedOfficeIdState(id);
-    localStorage.setItem(STORAGE_KEY, id);
-  };
-
-  const refreshOffices = useCallback(async () => {
-    const res = await fetch("/api/offices");
-    const data: Office[] = await res.json();
-    setOffices(data);
-  }, []);
-
+  // pickedOfficeId가 현재 offices 목록에 없으면 첫 항목으로 파생 (state 갱신 없음)
+  const pickedValid = pickedOfficeId && offices.some((o) => o.id === pickedOfficeId);
+  const selectedOfficeId = pickedValid ? pickedOfficeId : offices[0]?.id ?? null;
   const selectedOffice = offices.find((o) => o.id === selectedOfficeId) ?? null;
+
+  const setSelectedOfficeId = useCallback((id: string) => {
+    setPickedOfficeIdState(id);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(STORAGE_KEY, id);
+    }
+  }, []);
+
+  const refreshOffices = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.offices });
+  }, [queryClient]);
 
   return (
     <OfficeContext.Provider
-      value={{ offices, selectedOfficeId, selectedOffice, setSelectedOfficeId, loading, refreshOffices }}
+      value={{
+        offices,
+        selectedOfficeId,
+        selectedOffice,
+        setSelectedOfficeId,
+        loading: isLoading,
+        refreshOffices,
+      }}
     >
       {children}
     </OfficeContext.Provider>

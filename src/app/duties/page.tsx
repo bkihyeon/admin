@@ -1,74 +1,82 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useOffice } from "@/contexts/OfficeContext";
 import { CleaningDuty } from "@/lib/types";
+import { queryKeys } from "@/lib/query-keys";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
+import DutiesSkeleton from "@/components/skeletons/DutiesSkeleton";
 import { Dices, Loader2, Clock, LayoutGrid } from "lucide-react";
 import CardFlipModal from "@/components/CardFlipModal";
 
 export default function DutiesPage() {
   const { selectedOfficeId, selectedOffice } = useOffice();
-  const [duty, setDuty] = useState<CleaningDuty | null>(null);
+  const queryClient = useQueryClient();
   const [warning, setWarning] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const [showFlipModal, setShowFlipModal] = useState(false);
 
   const [currentMonth] = useState(() => new Date().toISOString().slice(0, 7));
 
-  useEffect(() => {
-    if (!selectedOfficeId) return;
-    fetch(`/api/duties?month=${currentMonth}&officeId=${selectedOfficeId}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data) && data.length > 0) setDuty(data[0]);
-        else setDuty(null);
+  const { data: duty = null, isLoading } = useQuery({
+    queryKey: queryKeys.duties(selectedOfficeId, currentMonth),
+    queryFn: async () => {
+      const res = await fetch(`/api/duties?month=${currentMonth}&officeId=${selectedOfficeId}`);
+      const data: CleaningDuty[] = await res.json();
+      return Array.isArray(data) && data.length > 0 ? data[0] : null;
+    },
+    enabled: !!selectedOfficeId,
+  });
+
+  const drawMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/duties", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ month: currentMonth, officeId: selectedOfficeId }),
       });
-  }, [currentMonth, selectedOfficeId]);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      return data as { duty: CleaningDuty; warning?: string };
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(queryKeys.duties(selectedOfficeId, currentMonth), data.duty);
+      // history 페이지의 전체 목록 캐시는 stale 표시만 하고 즉시 refetch는 안 함 (history 진입 시 백그라운드 갱신)
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.duties(selectedOfficeId),
+        refetchType: "none",
+      });
+      setWarning(data.warning ?? null);
+      setShowFlipModal(true);
+    },
+    onError: (err: Error) => {
+      alert(err.message);
+    },
+  });
 
   const draw = async () => {
     if (!selectedOfficeId) return;
-
     if (duty && duty.assignments.length > 0) {
       if (!confirm(`${selectedOffice?.name} 배정이 이미 있습니다. 새로 뽑으시겠습니까?`)) return;
     }
-
-    setLoading(true);
-    setWarning(null);
-
-    const res = await fetch("/api/duties", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ month: currentMonth, officeId: selectedOfficeId }),
-    });
-
-    const data = await res.json();
-    setLoading(false);
-
-    if (!res.ok) {
-      alert(data.error);
-      return;
-    }
-
-    setDuty(data.duty);
-    if (data.warning) setWarning(data.warning);
-
-    setShowFlipModal(true);
+    drawMutation.mutate();
   };
 
   const freeEmployees = duty?.freeEmployees?.[0];
 
+  if (isLoading) return <DutiesSkeleton />;
+
   return (
     <div className="space-y-6">
       <PageHeader title="청소 배정" badge={currentMonth}>
-        <Button variant="gradient-primary" size="lg" onClick={draw} disabled={loading || !selectedOfficeId}>
-          {loading ? <Loader2 size={18} className="animate-spin" /> : <Dices size={18} />}
-          {loading ? "배정 중..." : "뽑기"}
+        <Button variant="gradient-primary" size="lg" onClick={draw} disabled={drawMutation.isPending || !selectedOfficeId}>
+          {drawMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <Dices size={18} />}
+          {drawMutation.isPending ? "배정 중..." : "뽑기"}
         </Button>
       </PageHeader>
 
