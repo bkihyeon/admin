@@ -13,9 +13,21 @@ pnpm start                    # 프로덕션 서버
 # DB (Drizzle + Neon Postgres)
 pnpm drizzle-kit generate     # schema.ts 변경 → SQL 마이그레이션 생성
 pnpm drizzle-kit migrate      # 마이그레이션을 Neon에 적용
+
+# E2E (Playwright + Neon test branch)
+pnpm test:e2e                 # 헤드리스 실행
+pnpm test:e2e:ui              # Playwright UI
+pnpm test:e2e:report          # 직전 실행 HTML report
 ```
 
 환경변수는 `.env.local`의 `DATABASE_URL` 하나. Neon pooled connection string 사용.
+
+### E2E 테스트
+- 자세한 가이드: `docs/e2e.md`
+- E2E는 **`.env.test`의 `DATABASE_URL_TEST`만 사용**한다. prod URL 절대 금지. `e2e/fixtures/db.ts`의 safety 가드가 `'test'` 키워드를 강제 검사.
+- `playwright.config.ts`의 `webServer.env`가 dev 서버에 `DATABASE_URL`을 명시 주입 → `.env.local`의 prod 값을 override.
+- Project 분리: `db-writes`(workers=1, UNIQUE 충돌 회피) vs `read-mostly`(workers=4, CRUD 가속).
+- 로컬에서 `pnpm dev`를 띄워둔 상태로 e2e를 실행하면 `reuseExistingServer`가 적용되어 `webServer.env`가 무시된다 — 의심 시 dev 서버 종료 후 재실행.
 
 ## Architecture
 

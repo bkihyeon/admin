@@ -1,0 +1,58 @@
+name: e2e
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL_TEST: ${{ secrets.NEON_TEST_DATABASE_URL }}
+      DATABASE_URL: ${{ secrets.NEON_TEST_DATABASE_URL }}
+      # Neon endpoint hostname은 branch 이름과 무관하게 자동 부여라
+      # URL substring 'test' 검사는 통과 못 하는 게 일반적. 명시 confirm.
+      E2E_DB_CONFIRMED: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.27.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - run: pnpm playwright install --with-deps chromium
+
+      - name: Run e2e
+        # CI는 job-level env로 DATABASE_URL/DATABASE_URL_TEST 주입되어 dotenv-cli 불필요.
+        # 로컬 스크립트(test:e2e)는 dotenv 래퍼 경유라, CI에서는 playwright 직접 호출.
+        # 단, project 분리·reporter 등 모든 옵션은 playwright.config.ts에서 통일 관리.
+        run: pnpm exec playwright test
+        env:
+          CI: "true"
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7
