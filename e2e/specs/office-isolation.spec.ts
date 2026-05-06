@@ -9,9 +9,9 @@ async function selectOffice(page: import("@playwright/test").Page, name: string)
 
 async function closeFlipModal(page: import("@playwright/test").Page) {
   await expect(page.getByRole("heading", { name: "청소 배정 결과" })).toBeVisible();
-  // '전체 공개'가 있으면 누르고, 없으면 (이미 모두 공개된 상태) 바로 '확인'
-  const revealBtn = page.getByRole("button", { name: "전체 공개" });
-  if (await revealBtn.isVisible()) await revealBtn.click();
+  // '전체 공개'는 첫 상태에 항상 노출. isVisible()은 non-retrying이라 opacity
+  // 트랜지션 중 false 반환 가능 → click()의 actionability 폴링에 위임.
+  await page.getByRole("button", { name: "전체 공개" }).click();
   await page.getByRole("button", { name: "확인" }).click();
   await expect(
     page.getByRole("heading", { name: "청소 배정 결과" }),

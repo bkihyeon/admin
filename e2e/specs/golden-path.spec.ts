@@ -43,16 +43,19 @@ test("등록 → 사원/항목 추가 → 뽑기 → 이력 확인 (전체 골�
   await expect(drawBtn).toBeEnabled();
   await drawBtn.click();
 
-  // CardFlipModal 등장 → 닫기 ('전체 공개'가 있으면 누르고, 없으면 바로 '확인')
+  // CardFlipModal 등장 — '전체 공개'는 첫 상태에 항상 노출 (allFlipped=false).
+  // isVisible()은 non-retrying이라 opacity 트랜지션 중 false 반환 가능 → 분기 제거하고
+  // click()의 actionability 폴링에 위임.
   await expect(page.getByRole("heading", { name: "청소 배정 결과" })).toBeVisible();
-  const revealBtn = page.getByRole("button", { name: "전체 공개" });
-  if (await revealBtn.isVisible()) await revealBtn.click();
+  await page.getByRole("button", { name: "전체 공개" }).click();
+
+  // '확인'은 allFlipped=true일 때만 등장. click()이 등장까지 대기.
   await page.getByRole("button", { name: "확인" }).click();
   await expect(
     page.getByRole("heading", { name: "청소 배정 결과" }),
   ).not.toBeVisible();
 
-  // 결과 카드에 사원 이름 노출
+  // 결과 카드에 사원 이름 노출 (모달 닫힌 뒤 페이지의 결과 영역 검증)
   for (const name of ["김철수", "이영희", "박민수"]) {
     await expect(page.getByText(name).first()).toBeVisible();
   }
