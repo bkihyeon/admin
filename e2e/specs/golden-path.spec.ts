@@ -17,6 +17,11 @@ test("등록 → 사원/항목 추가 → 뽑기 → 이력 확인 (전체 골�
 
   // 2) 사원 3명 등록
   await page.goto("/employees");
+  // OfficeContext가 localStorage에서 selectedOfficeId 복원 후 사이드바에 반영될 때까지 대기.
+  // 이 대기 없이 곧장 등록 누르면 selectedOfficeId가 null인 상태로 POST되어 셀 안 뜸 (CI 한정 재현).
+  await expect(
+    page.locator("aside select option:checked"),
+  ).toHaveText("테스트사무소");
   for (const name of ["김철수", "이영희", "박민수"]) {
     await page.getByPlaceholder("이름 입력").fill(name);
     await page.getByRole("button", { name: "등록" }).click();
