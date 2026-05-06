@@ -7,25 +7,15 @@ export default defineConfig({
   timeout: 30_000,
   expect: { timeout: 5_000 },
   fullyParallel: false,
+  // 모든 spec이 공유 DB를 truncate하므로 전역 직렬화. project 분리(workers=1)는
+  // 같은 project 내부만 직렬이고 project 간엔 병렬이라 race 잔존 → top-level로 통일.
+  workers: 1,
   retries: 0,
   reporter: [["html", { open: "never" }], ["list"]],
   use: {
     baseURL,
     trace: "retain-on-failure",
   },
-  projects: [
-    {
-      name: "db-writes",
-      testMatch:
-        /(golden-path|duties-rerun-warnings|office-isolation)\.spec\.ts/,
-      workers: 1,
-    },
-    {
-      name: "read-mostly",
-      testMatch: /crud-(employees|duty-items|offices)\.spec\.ts/,
-      workers: 4,
-    },
-  ],
   webServer: {
     command: "pnpm dev",
     url: baseURL,
