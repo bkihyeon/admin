@@ -1,10 +1,6 @@
-// T1: duties 정규화 직전 baseline equivalency 측정.
-// 읽기 전용. test/prod 양쪽에서 실행해 결과를 .omc/baselines/{env}.json으로 저장.
-// 정규화 후 동일 스크립트의 "복원" 모드(아래 reconstructSql)로 재집계해 diff 0 검증.
-//
-// usage:
-//   DATABASE_URL=... node scripts/duties-baseline.mjs test
-//   DATABASE_URL=... node scripts/duties-baseline.mjs prod
+// duties baseline 측정. 현 schema((month, office_id) 분할 row, free_employee 단수)
+// 기준 멀티셋을 .omc/baselines/{env}.json에 저장. 미래 schema 변경 시 동치성 검증의
+// 비교 기준점으로 사용. duties-compare.mjs와 짝.
 
 import { neon } from "@neondatabase/serverless";
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from "node:fs";
@@ -38,9 +34,8 @@ const url =
   env === "test"
     ? loadEnvFile(resolve(".env.test")).DATABASE_URL_TEST
     : loadEnvFile(resolve(".env.local")).DATABASE_URL;
-
 if (!url) {
-  console.error(`URL을 찾을 수 없음: env=${env} (.env.test의 DATABASE_URL_TEST / .env.local의 DATABASE_URL 확인)`);
+  console.error(`URL을 찾을 수 없음: env=${env}`);
   process.exit(1);
 }
 
@@ -53,38 +48,24 @@ const queries = {
       COUNT(DISTINCT month)::int AS month_count
     FROM duties
   `,
-  perRow: `
-    SELECT
-      month,
-      jsonb_array_length(assignments) AS assignments_len,
-      jsonb_array_length(free_employees) AS free_len,
-      (
-        SELECT COUNT(DISTINCT elem->>'officeId')::int
-        FROM jsonb_array_elements(assignments) elem
-        WHERE elem->>'officeId' IS NOT NULL
-      ) AS distinct_offices_in_assignments,
-      created_at
-    FROM duties
-    ORDER BY month
-  `,
+  // 정규화 후 row 단위는 (month, office_id). per-office는 row 그대로 추출.
   perOffice: `
     SELECT
       month,
-      elem->>'officeId' AS office_id,
-      elem->>'officeName' AS office_name,
-      COUNT(*)::int AS assignment_count
-    FROM duties, jsonb_array_elements(assignments) elem
-    GROUP BY month, elem->>'officeId', elem->>'officeName'
-    ORDER BY month, elem->>'officeId'
+      office_id,
+      (assignments->0->>'officeName') AS office_name,
+      jsonb_array_length(assignments)::int AS assignment_count
+    FROM duties
+    WHERE jsonb_array_length(assignments) > 0
+    ORDER BY month, office_id
   `,
-  // 정규화 후 재집계할 때 비교 기준이 될 핵심 셋:
-  // 한 dutyItem에 여러 사원이 묶이므로 assignedEmployeeIds/Names를 unnest하여
-  // (month, officeId, dutyItemId, slot_index, employeeId, employeeName) 멀티셋으로 펼친다.
-  // slot_index는 동일 사원이 같은 dutyItem에 중복 배정되는 케이스(풀 소진 후 재셔플)를 보존.
+  // assignment tuples: pre 동일 멀티셋 (month, office_id, duty_item_id, duty_item_name, slot_index, employee_id, employee_name)
+  // pre는 office_id가 NULL인 케이스를 elem->>'officeId'로 추출 → text NULL.
+  // post는 row의 office_id 컬럼을 사용.
   assignmentTuples: `
     SELECT
       d.month,
-      elem->>'officeId' AS office_id,
+      d.office_id,
       elem->>'dutyItemId' AS duty_item_id,
       elem->>'dutyItemName' AS duty_item_name,
       slot.ord AS slot_index,
@@ -96,15 +77,17 @@ const queries = {
       jsonb_array_elements_text(elem->'assignedEmployeeIds') WITH ORDINALITY AS slot(employee_id, ord),
       jsonb_array_elements_text(elem->'assignedEmployeeNames') WITH ORDINALITY AS name(employee_name, ord2)
     WHERE slot.ord = name.ord2
-    ORDER BY d.month, elem->>'officeId', elem->>'dutyItemId', slot.ord
+    ORDER BY d.month, d.office_id, elem->>'dutyItemId', slot.ord
   `,
+  // free_employee 단수 → 배열 elem 형태로 펼쳐 (month, office_id) 단위 멀티셋 비교 가능하게.
   freeEmployeeTuples: `
     SELECT
       month,
-      elem->>'officeId' AS office_id,
-      elem->'employeeNames' AS employee_names
-    FROM duties, jsonb_array_elements(free_employees) elem
-    ORDER BY month, elem->>'officeId'
+      office_id,
+      free_employee->'employeeNames' AS employee_names
+    FROM duties
+    WHERE free_employee IS NOT NULL
+    ORDER BY month, office_id
   `,
 };
 
