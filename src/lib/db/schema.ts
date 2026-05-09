@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, timestamp, jsonb, unique, index } from "drizzle-orm/pg-core";
 import type { DutyAssignment, OfficeFreeEmployees, RecyclingWeek } from "@/lib/types";
 
 export const offices = pgTable("offices", {
@@ -29,18 +29,26 @@ export const dutyItems = pgTable("duty_items", {
   }),
 });
 
-export const duties = pgTable("duties", {
-  id: text("id").primaryKey(),
-  month: text("month").notNull().unique(),
-  assignments: jsonb("assignments").$type<DutyAssignment[]>().notNull(),
-  freeEmployees: jsonb("free_employees")
-    .$type<OfficeFreeEmployees[]>()
-    .notNull()
-    .default([]),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const duties = pgTable(
+  "duties",
+  {
+    id: text("id").primaryKey(),
+    month: text("month").notNull(),
+    officeId: text("office_id"),
+    assignments: jsonb("assignments").$type<DutyAssignment[]>().notNull(),
+    freeEmployee: jsonb("free_employee").$type<OfficeFreeEmployees | null>(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    unique("duties_month_office_unique")
+      .on(t.month, t.officeId)
+      .nullsNotDistinct(),
+    index("duties_month_idx").on(t.month),
+    index("duties_office_idx").on(t.officeId),
+  ],
+);
 
 export const recyclingState = pgTable("recycling_state", {
   id: integer("id").primaryKey().default(1),

@@ -36,8 +36,9 @@ export interface OfficeFreeEmployees {
 export interface CleaningDuty {
   id: string;
   month: string; // "2026-04" 형식
+  officeId: string | null;
   assignments: DutyAssignment[];
-  freeEmployees: OfficeFreeEmployees[];
+  freeEmployee: OfficeFreeEmployees | null;
   createdAt: string;
 }
 

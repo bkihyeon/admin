@@ -4,9 +4,9 @@ import { listEmployeesByOffice } from "@/lib/db/repositories/employees";
 import { listDutyItemsByOffice } from "@/lib/db/repositories/duty-items";
 import { getOfficeById } from "@/lib/db/repositories/offices";
 import {
-  listDuties,
-  getDutyByMonth,
-  mergeDutyForOffice,
+  getDutyByMonthAndOffice,
+  listDutiesByOffice,
+  upsertDuty,
 } from "@/lib/db/repositories/duties";
 
 export async function GET(request: Request) {
@@ -14,33 +14,16 @@ export async function GET(request: Request) {
   const month = searchParams.get("month");
   const officeId = searchParams.get("officeId");
 
+  if (!officeId) {
+    return NextResponse.json({ error: "사무실을 지정해주세요" }, { status: 400 });
+  }
+
   if (month) {
-    const duty = await getDutyByMonth(month);
-    if (!duty) return NextResponse.json([]);
-
-    if (officeId) {
-      const filtered = {
-        ...duty,
-        assignments: duty.assignments.filter((a) => a.officeId === officeId),
-        freeEmployees: duty.freeEmployees.filter((f) => f.officeId === officeId),
-      };
-      return NextResponse.json([filtered]);
-    }
-
-    return NextResponse.json([duty]);
+    const duty = await getDutyByMonthAndOffice(month, officeId);
+    return NextResponse.json(duty);
   }
 
-  const duties = await listDuties();
-
-  if (officeId) {
-    const filtered = duties.map((d) => ({
-      ...d,
-      assignments: d.assignments.filter((a) => a.officeId === officeId),
-      freeEmployees: d.freeEmployees.filter((f) => f.officeId === officeId),
-    }));
-    return NextResponse.json(filtered);
-  }
-
+  const duties = await listDutiesByOffice(officeId);
   return NextResponse.json(duties);
 }
 
@@ -72,15 +55,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: `${officeName}에 등록된 담당항목이 없습니다` }, { status: 400 });
   }
 
-  const { assignments: newAssignments, freeEmployees: newFree } =
-    assignDutiesForOffice(officeEmployees, officeItems, officeId, officeName);
-
-  const duty = await mergeDutyForOffice({
-    month,
+  const { assignments, freeEmployee } = assignDutiesForOffice(
+    officeEmployees,
+    officeItems,
     officeId,
-    assignments: newAssignments,
-    freeEmployees: newFree,
-  });
+    officeName,
+  );
+
+  const duty = await upsertDuty({ month, officeId, assignments, freeEmployee });
 
   const reqCount = officeItems.reduce((sum, d) => sum + d.requiredCount, 0);
   const warning =

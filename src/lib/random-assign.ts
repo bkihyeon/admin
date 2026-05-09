@@ -60,7 +60,7 @@ export function assignDutiesForOffice(
   dutyItems: DutyItem[],
   officeId: string,
   officeName: string
-): { assignments: DutyAssignment[]; freeEmployees: OfficeFreeEmployees | null } {
+): { assignments: DutyAssignment[]; freeEmployee: OfficeFreeEmployees | null } {
   const { assignments, freeEmployeeNames } = assignItemsFromPool(
     employees,
     dutyItems,
@@ -68,10 +68,10 @@ export function assignDutiesForOffice(
     officeName
   );
 
-  const freeEmployees =
+  const freeEmployee =
     freeEmployeeNames.length > 0
       ? { officeId, officeName, employeeNames: freeEmployeeNames }
       : null;
 
-  return { assignments, freeEmployees };
+  return { assignments, freeEmployee };
 }
