@@ -30,7 +30,7 @@ export default function HistoryPage() {
   const selectedMonth = pickedValid ? pickedMonth : duties[0]?.month ?? "";
   const selectedDuty = duties.find((d) => d.month === selectedMonth);
   const months = duties.map((d) => d.month);
-  const freeEmployees = selectedDuty?.freeEmployees?.[0];
+  const freeEmployee = selectedDuty?.freeEmployee;
 
   if (isLoading) return <HistorySkeleton />;
 
@@ -90,10 +90,10 @@ export default function HistoryPage() {
                 ))}
               </div>
 
-              {freeEmployees && freeEmployees.employeeNames.length > 0 && (
+              {freeEmployee && freeEmployee.employeeNames.length > 0 && (
                 <div className="mt-3 flex items-center gap-2 flex-wrap">
                   <span className="text-xs text-text-tertiary font-medium">프리:</span>
-                  {freeEmployees.employeeNames.map((name, i) => (
+                  {freeEmployee.employeeNames.map((name, i) => (
                     <Badge key={i} variant="neutral">{name}</Badge>
                   ))}
                 </div>

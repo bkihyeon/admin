@@ -30,8 +30,8 @@ export default function Dashboard() {
     queryKey: queryKeys.duties(selectedOfficeId, currentMonth),
     queryFn: async () => {
       const res = await fetch(`/api/duties?month=${currentMonth}&officeId=${selectedOfficeId}`);
-      const data: CleaningDuty[] = await res.json();
-      return Array.isArray(data) && data.length > 0 ? data[0] : null;
+      const data: CleaningDuty | null = await res.json();
+      return data;
     },
     enabled: !!selectedOfficeId,
   });
@@ -45,7 +45,7 @@ export default function Dashboard() {
     0
   ) ?? 0;
 
-  const freeEmployees = duty?.freeEmployees?.[0];
+  const freeEmployee = duty?.freeEmployee;
 
   return (
     <div className="space-y-8">
@@ -107,10 +107,10 @@ export default function Dashboard() {
                 </div>
               ))}
             </div>
-            {freeEmployees && freeEmployees.employeeNames.length > 0 && (
+            {freeEmployee && freeEmployee.employeeNames.length > 0 && (
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs text-text-tertiary font-medium">프리:</span>
-                {freeEmployees.employeeNames.map((name, i) => (
+                {freeEmployee.employeeNames.map((name, i) => (
                   <Badge key={i} variant="neutral">{name}</Badge>
                 ))}
               </div>

@@ -15,6 +15,13 @@
       "when": 1778300998922,
       "tag": "0001_add_offices",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778315845796,
+      "tag": "0002_normalize_duties_month_office",
+      "breakpoints": true
     }
   ]
 }

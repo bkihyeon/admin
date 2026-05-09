@@ -25,7 +25,7 @@ function buildEmployeeCards(duty: CleaningDuty): EmployeeCard[] {
     }
   }
 
-  const freeEntry = duty.freeEmployees?.[0];
+  const freeEntry = duty.freeEmployee;
   if (freeEntry) {
     for (const name of freeEntry.employeeNames) {
       cards.push({

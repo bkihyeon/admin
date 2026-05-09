@@ -27,8 +27,8 @@ export default function DutiesPage() {
     queryKey: queryKeys.duties(selectedOfficeId, currentMonth),
     queryFn: async () => {
       const res = await fetch(`/api/duties?month=${currentMonth}&officeId=${selectedOfficeId}`);
-      const data: CleaningDuty[] = await res.json();
-      return Array.isArray(data) && data.length > 0 ? data[0] : null;
+      const data: CleaningDuty | null = await res.json();
+      return data;
     },
     enabled: !!selectedOfficeId,
   });
@@ -67,7 +67,7 @@ export default function DutiesPage() {
     drawMutation.mutate();
   };
 
-  const freeEmployees = duty?.freeEmployees?.[0];
+  const freeEmployee = duty?.freeEmployee;
 
   if (isLoading) return <DutiesSkeleton />;
 
@@ -99,13 +99,13 @@ export default function DutiesPage() {
             ))}
           </div>
 
-          {freeEmployees && freeEmployees.employeeNames.length > 0 && (
+          {freeEmployee && freeEmployee.employeeNames.length > 0 && (
             <Card className="p-5 border-dashed">
               <div className="text-sm font-semibold text-text-secondary pb-3 mb-3 border-b border-border-light">
                 프리 (미배정)
               </div>
               <div className="flex flex-wrap gap-1.5">
-                {freeEmployees.employeeNames.map((name, i) => (
+                {freeEmployee.employeeNames.map((name, i) => (
                   <Badge key={i} variant="neutral">{name}</Badge>
                 ))}
               </div>

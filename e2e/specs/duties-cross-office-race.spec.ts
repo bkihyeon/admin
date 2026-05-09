@@ -1,19 +1,18 @@
 import { test, expect } from "../fixtures/test";
 
 /**
- * race 회귀 spec (T0b) — 두 사무실이 같은 월에 동시에 POST /api/duties를
+ * cross-office isolation 회귀 spec — 두 사무실이 같은 월에 동시에 POST /api/duties를
  * 호출해도 양쪽 결과가 모두 DB에 보존되는지 검증.
  *
- * 결정성 전략:
- *  - 두 사무실에 대량 시드(사원 100명/dutyItems 5개)를 넣어 핸들러 처리 시간을
- *    인위적으로 늘리고, 두 번째 POST가 첫 번째의 read/update 사이에 끼어들도록
- *    race window를 키운다.
- *  - iteration 5회 반복, 단 1회라도 한쪽 결과가 누락되면 fail.
- *  - Phase 0(단일 SQL atomic JSONB merge) 적용 전 코드에서는 read-merge-upsert
- *    4단계 race로 거의 항상 fail (사전 측정 노출률 ≥ 95% 임계치 충족 상태).
- *  - Phase 0 이후에는 ON CONFLICT (month) row 락이 두 POST를 직렬화해 결정적 pass.
+ * Phase 0 시점: read-merge-upsert 4단계 race를 atomic JSONB merge로 봉쇄하는
+ *   regression guard로 도입.
+ * Phase 1 시점(현): schema가 (month, office_id) UNIQUE로 분할되어 두 office의
+ *   동시 POST가 *서로 다른 row*에 INSERT됨. 즉 race 자체가 구조적으로 사라졌고
+ *   본 spec은 "구조적 isolation 보장이 깨지지 않는지"의 회귀 가드 역할로 전환.
  *
- * 사전 측정 결과는 PR 본문 참조.
+ * 결정성 전략(여전히 유효):
+ *  - 두 사무실에 대량 시드(사원 100명/dutyItems 5개)로 핸들러 처리 시간을 늘려
+ *    iteration 5회 동시 POST → 양쪽 row 모두 보존됨을 확인.
  */
 test("두 사무실이 같은 월에 동시 뽑기를 해도 양쪽 결과가 모두 보존된다", async ({
   request,
@@ -61,15 +60,12 @@ test("두 사무실이 같은 월에 동시 뽑기를 해도 양쪽 결과가 �
       `iter ${i}: office B POST 실패 (${resB.status()})`,
     ).toBeTruthy();
 
-    const listA = await (
+    const dutyA = await (
       await request.get(`/api/duties?month=${month}&officeId=${officeA.id}`)
     ).json();
-    const listB = await (
+    const dutyB = await (
       await request.get(`/api/duties?month=${month}&officeId=${officeB.id}`)
     ).json();
-
-    const dutyA = Array.isArray(listA) ? listA[0] : null;
-    const dutyB = Array.isArray(listB) ? listB[0] : null;
 
     expect(
       dutyA?.assignments?.length ?? 0,
