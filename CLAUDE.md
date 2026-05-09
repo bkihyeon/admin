@@ -33,7 +33,7 @@ pnpm test:e2e:report          # 직전 실행 HTML report
 
 회사 청소 담당 관리 프로그램. Next.js 풀스택 앱. Vercel + Neon Postgres 배포.
 
-사용 모델: 쓰기(사원/품목 등록, 배정 뽑기, 재활용 순환)는 사실상 관리자 1인이 수행하지만, **읽기는 여러 명이 동시에 접근 가능**한 공개 URL. 인증은 아직 없음 — 누구나 URL을 알면 수정도 가능한 상태이므로, 파괴적 작업(삭제/재배정)은 프론트 `confirm`으로만 방어 중. 추후 인증 도입 전까지는 같은 월 동시 재배정 같은 레이스는 `upsertDuty`의 원자성에 의존.
+사용 모델: 쓰기(사원/품목 등록, 배정 뽑기, 재활용 순환)는 사실상 관리자 1인이 수행하지만, **읽기는 여러 명이 동시에 접근 가능**한 공개 URL. 인증은 아직 없음 — 누구나 URL을 알면 수정도 가능한 상태이므로, 파괴적 작업(삭제/재배정)은 프론트 `confirm`으로만 방어 중. 같은 월의 같은 사무실 동시 재배정은 `(month, office_id)` UNIQUE의 row 락 + `upsertDuty`의 `ON CONFLICT DO UPDATE`로 원자화, 다른 사무실 간에는 row 자체가 분리되어 race 자체가 없음.
 
 ### 기술 스택
 - **Next.js 16** (App Router) + **TypeScript** (strict mode)
@@ -52,7 +52,7 @@ pnpm test:e2e:report          # 직전 실행 HTML report
 - `src/contexts/OfficeContext.tsx` — 전역 사무실 선택 상태 관리 (`useOffice()` 훅). localStorage로 마지막 선택 기억
 - `src/components/ClientLayout.tsx` — `OfficeProvider` + `Sidebar` + `main` 래퍼. `layout.tsx`(Server Component)에서 사용
 - 사이드바에서 사무실을 선택하면 해당 사무실 데이터만 표시 (전체 보기 없음)
-- API는 `?officeId=xxx` 쿼리 파라미터로 서버사이드 필터링. employees, duty-items는 DB WHERE, duties는 JSONB 앱 레벨 필터
+- API는 `?officeId=xxx` 쿼리 파라미터로 서버사이드 필터링. employees / duty_items / duties 모두 DB WHERE (`office_id` 컬럼)
 - 사무실 CRUD는 `/offices` 별도 페이지에서 관리
 
 ### 데이터 흐름
@@ -60,10 +60,10 @@ pnpm test:e2e:report          # 직전 실행 HTML report
 - 페이지는 `"use client"` + `fetch`로 API 호출. `useOffice()`에서 `selectedOfficeId`를 받아 API 요청에 포함
 - `duties.assignments`, `recycling_state.schedule`은 JSONB로 저장 (월 단위 완결형 구조라 정규화 이득 없음)
 - JSONB에는 ID뿐 아니라 사원명/품목명/officeId/officeName 스냅샷도 함께 저장됨 — **의도적 동결**. "한 번 뽑힌 담당은 바뀌지 않는다"는 요구사항을 위해, 배정 시점의 이름을 그대로 보존. 사원 개명/삭제/사무실 이동이 일어나도 과거 기록은 원형대로 유지
-- 단, "동결"은 **다른 월**에 한정. 같은 월 재배정은 `upsertDuty`가 덮어씀 (프론트 `src/app/duties/page.tsx`에서 `confirm` 경고 후 진행)
-- duties POST는 officeId 필수. 해당 사무실 배정만 교체하고 다른 사무실 배정은 유지 (JSONB merge 패턴)
+- 단, "동결"은 **다른 (month, officeId) 조합**에 한정. 같은 사무실의 같은 월 재배정은 `upsertDuty`가 덮어씀 (프론트 `src/app/duties/page.tsx`에서 `confirm` 경고 후 진행)
+- duties POST는 officeId 필수. `(month, office_id)` row 단위 upsert — 다른 사무실 row는 영향 없음
 - `recycling_state`는 `id = 1` singleton (한 행만 존재)
-- `duties.month`에 UNIQUE 제약 — 월별 중복은 DB가 강제, `upsertDuty`가 `ON CONFLICT DO UPDATE` 사용
+- `duties`에 `(month, office_id) UNIQUE NULLS NOT DISTINCT` 제약 — 사무실별 월별 중복은 DB가 강제, `upsertDuty`가 `ON CONFLICT DO UPDATE` 사용. `NULLS NOT DISTINCT`는 PG15+ 기능으로 `office_id`가 NULL인 케이스(orphan/legacy)도 한 month당 1건으로 강제
 
 ### 핵심 비즈니스 로직 (DB와 독립된 순수 함수)
 - `src/lib/random-assign.ts` — Fisher-Yates 셔플 기반 청소 담당 랜덤 배정. `assignDutiesForOffice()`로 단일 사무실 배정. 풀 소진 시 재셔플(다른 항목 간 중복 허용)
