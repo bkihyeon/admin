@@ -6,7 +6,7 @@ import { getOfficeById } from "@/lib/db/repositories/offices";
 import {
   listDuties,
   getDutyByMonth,
-  upsertDuty,
+  mergeDutyForOffice,
 } from "@/lib/db/repositories/duties";
 
 export async function GET(request: Request) {
@@ -75,20 +75,12 @@ export async function POST(request: Request) {
   const { assignments: newAssignments, freeEmployees: newFree } =
     assignDutiesForOffice(officeEmployees, officeItems, officeId, officeName);
 
-  const existing = await getDutyByMonth(month);
-  const otherAssignments = existing?.assignments.filter((a) => a.officeId !== officeId) ?? [];
-  const otherFree = existing?.freeEmployees.filter((f) => f.officeId !== officeId) ?? [];
-
-  const mergedAssignments = [...otherAssignments, ...newAssignments];
-  const mergedFree = [...otherFree, ...(newFree ? [newFree] : [])];
-
-  const duty = await upsertDuty({ month, assignments: mergedAssignments, freeEmployees: mergedFree });
-
-  const filteredDuty = {
-    ...duty,
-    assignments: duty.assignments.filter((a) => a.officeId === officeId),
-    freeEmployees: duty.freeEmployees.filter((f) => f.officeId === officeId),
-  };
+  const duty = await mergeDutyForOffice({
+    month,
+    officeId,
+    assignments: newAssignments,
+    freeEmployees: newFree,
+  });
 
   const reqCount = officeItems.reduce((sum, d) => sum + d.requiredCount, 0);
   const warning =
@@ -96,5 +88,5 @@ export async function POST(request: Request) {
       ? `${officeName}: 필요 인원(${reqCount}명) > 사원 수(${officeEmployees.length}명), 일부 중복 배정`
       : null;
 
-  return NextResponse.json({ duty: filteredDuty, warning }, { status: 201 });
+  return NextResponse.json({ duty, warning }, { status: 201 });
 }

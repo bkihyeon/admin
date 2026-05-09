@@ -26,7 +26,7 @@ pnpm test:e2e:report          # 직전 실행 HTML report
 - 자세한 가이드: `docs/e2e.md`
 - E2E는 **`.env.test`의 `DATABASE_URL_TEST`만 사용**한다. prod URL 절대 금지. `e2e/fixtures/db.ts`의 safety 가드가 `'test'` 키워드를 강제 검사.
 - `playwright.config.ts`의 `webServer.env`가 dev 서버에 `DATABASE_URL`을 명시 주입 → `.env.local`의 prod 값을 override.
-- Project 분리: `db-writes`(workers=1, UNIQUE 충돌 회피) vs `read-mostly`(workers=4, CRUD 가속).
+- Top-level `workers: 1` 단일 구성. 모든 spec이 공유 DB를 truncate하므로 전역 직렬화 (project 분리 시 project 간 병렬에서 race 잔존 → 통일). 사유는 `playwright.config.ts:11-14` 주석 참조.
 - 로컬에서 `pnpm dev`를 띄워둔 상태로 e2e를 실행하면 `reuseExistingServer`가 적용되어 `webServer.env`가 무시된다 — 의심 시 dev 서버 종료 후 재실행.
 
 ## Architecture
