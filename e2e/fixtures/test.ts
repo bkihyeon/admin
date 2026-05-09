@@ -16,9 +16,6 @@ export const acceptDialog = (page: Page, expectedText?: string) =>
     await d.accept();
   });
 
-export const dismissDialog = (page: Page) =>
-  page.once("dialog", (d) => d.dismiss());
-
 // =====================================================
 // db fixture
 // =====================================================

@@ -11,8 +11,8 @@
 //   - perOffice : (month, officeId) 별 assignment_count 일치
 //
 // 의도적 제외:
-//   - perRow.created_at : Phase 0에서 의미가 변형, Phase 1에서 row 단위 분할 — 비교 대상 아님
-//   - totals.row_count : 정규화 후 row 단위가 (month) → (month, office_id)로 바뀌므로 직접 비교 불가
+//   - totals.row_count : schema 변경 시 row 단위가 달라지면 직접 비교 부적합
+//   - created_at : 의미가 schema 형태에 따라 달라져 동등성 기준에서 제외
 //
 // 실패 시 어느 튜플이 차이 났는지 stdout에 출력하고 exit 1.
 
