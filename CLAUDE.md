@@ -7,7 +7,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 pnpm dev                      # 개발 서버 (http://localhost:3000)
 pnpm build                    # 프로덕션 빌드
-pnpm lint                     # ESLint 실행
+pnpm lint                     # Biome lint + format 검사
+pnpm lint:fix                 # Biome lint + format auto-fix
+pnpm format                   # Biome 포맷만 적용
 pnpm start                    # 프로덕션 서버
 
 # DB (Drizzle + Neon Postgres)
@@ -96,6 +98,7 @@ pnpm test:e2e:report          # 직전 실행 HTML report
 - 한국어 UI/커밋 메시지. 커밋 메시지는 주요 변경 사항 위주로 심플하게
 - 라이트 테마 고정 (다크모드 없음)
 - 비즈니스 로직은 `src/lib/`에 순수 함수로 분리, DB/API/UI와 독립
+- Lint/format은 Biome 단일 툴체인. `biome.json`은 `recommended` 룰만 명시하고, 도메인 룰(next/react/drizzle/playwright/tailwind)은 `package.json` 의존성에서 자동 감지된다. CSS는 Tailwind v4 `@theme` 디렉티브 파싱을 위해 `css.parser.tailwindDirectives: true`
 
 
 ## Gotchas

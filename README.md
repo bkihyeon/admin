@@ -25,7 +25,7 @@ pnpm dev                          # http://localhost:3000
 |---|---|
 | `pnpm dev` | 개발 서버 |
 | `pnpm build` / `pnpm start` | 프로덕션 |
-| `pnpm lint` | ESLint |
+| `pnpm lint` / `pnpm lint:fix` / `pnpm format` | Biome (lint + format) |
 | `pnpm test:e2e` | Playwright E2E (`docs/e2e.md` 참조) |
 | `pnpm drizzle-kit generate` | schema.ts → 마이그레이션 SQL 생성 |
 | `pnpm drizzle-kit migrate` | 마이그레이션 적용 |
