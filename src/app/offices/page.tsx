@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Building2, Pencil, PlusCircle, Trash2 } from "lucide-react";
 import { useState } from "react";
 import Button from "@/components/ui/Button";
+import { BlurFade } from "@/components/ui/blur-fade";
 import Card from "@/components/ui/Card";
 import EmptyState from "@/components/ui/EmptyState";
 import Input from "@/components/ui/Input";
@@ -81,105 +82,114 @@ export default function OfficesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="사무실 관리" />
+      <BlurFade delay={0}>
+        <PageHeader title="사무실 관리" />
+      </BlurFade>
 
-      <Card className="p-6">
-        <h3 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-2">
-          <PlusCircle size={16} className="text-primary-500" />
-          사무실 추가
-        </h3>
-        <div className="flex gap-3">
-          <Input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) =>
-              e.key === "Enter" && !e.nativeEvent.isComposing && handleAdd()
-            }
-            placeholder="사무실 이름 입력"
-            className="flex-1"
-          />
-          <Button onClick={handleAdd}>추가</Button>
-        </div>
-      </Card>
-
-      <Card>
-        {offices.length === 0 ? (
-          <EmptyState
-            icon={Building2}
-            title="등록된 사무실이 없습니다"
-            description="첫 번째 사무실을 등록해보세요."
-          />
-        ) : (
-          <div className="divide-y divide-border-light">
-            {offices.map((office) => (
-              <div
-                key={office.id}
-                className="flex items-center justify-between py-4 px-5"
-              >
-                {editingId === office.id ? (
-                  <Input
-                    inputSize="sm"
-                    type="text"
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    onKeyDown={(e) =>
-                      e.key === "Enter" &&
-                      !e.nativeEvent.isComposing &&
-                      handleUpdate(office.id)
-                    }
-                    autoFocus
-                    className="flex-1 mr-3"
-                  />
-                ) : (
-                  <div className="flex items-center gap-3">
-                    <Building2 size={16} className="text-primary-500" />
-                    <span className="text-sm font-medium text-text-primary">
-                      {office.name}
-                    </span>
-                  </div>
-                )}
-                <div className="flex items-center gap-2">
-                  {editingId === office.id ? (
-                    <>
-                      <Button size="sm" onClick={() => handleUpdate(office.id)}>
-                        저장
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setEditingId(null)}
-                      >
-                        취소
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setEditingId(office.id);
-                          setEditName(office.name);
-                        }}
-                      >
-                        <Pencil size={14} />
-                      </Button>
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={() => handleDelete(office.id, office.name)}
-                      >
-                        <Trash2 size={14} />
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
+      <BlurFade delay={0.1}>
+        <Card className="p-6">
+          <h3 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-2">
+            <PlusCircle size={16} className="text-primary-500" />
+            사무실 추가
+          </h3>
+          <div className="flex gap-3">
+            <Input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) =>
+                e.key === "Enter" && !e.nativeEvent.isComposing && handleAdd()
+              }
+              placeholder="사무실 이름 입력"
+              className="flex-1"
+            />
+            <Button onClick={handleAdd}>추가</Button>
           </div>
-        )}
-      </Card>
+        </Card>
+      </BlurFade>
+
+      <BlurFade delay={0.2}>
+        <Card>
+          {offices.length === 0 ? (
+            <EmptyState
+              icon={Building2}
+              title="등록된 사무실이 없습니다"
+              description="첫 번째 사무실을 등록해보세요."
+            />
+          ) : (
+            <div className="divide-y divide-border-light">
+              {offices.map((office) => (
+                <div
+                  key={office.id}
+                  className="flex items-center justify-between py-4 px-5"
+                >
+                  {editingId === office.id ? (
+                    <Input
+                      inputSize="sm"
+                      type="text"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      onKeyDown={(e) =>
+                        e.key === "Enter" &&
+                        !e.nativeEvent.isComposing &&
+                        handleUpdate(office.id)
+                      }
+                      autoFocus
+                      className="flex-1 mr-3"
+                    />
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <Building2 size={16} className="text-primary-500" />
+                      <span className="text-sm font-medium text-text-primary">
+                        {office.name}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    {editingId === office.id ? (
+                      <>
+                        <Button
+                          size="sm"
+                          onClick={() => handleUpdate(office.id)}
+                        >
+                          저장
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingId(null)}
+                        >
+                          취소
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setEditingId(office.id);
+                            setEditName(office.name);
+                          }}
+                        >
+                          <Pencil size={14} />
+                        </Button>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => handleDelete(office.id, office.name)}
+                        >
+                          <Trash2 size={14} />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      </BlurFade>
     </div>
   );
 }

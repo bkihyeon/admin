@@ -4,10 +4,6 @@ import Skeleton from "@/components/ui/Skeleton";
 export default function SettingsSkeleton() {
   return (
     <div className="space-y-6">
-      {/* PageHeader */}
-      <Skeleton height={32} width={140} />
-
-      {/* 추가 폼 */}
       <Card className="p-6">
         <Skeleton height={16} width={80} className="mb-3" />
         <div className="flex gap-3">
@@ -17,7 +13,6 @@ export default function SettingsSkeleton() {
         </div>
       </Card>
 
-      {/* 테이블 */}
       <Card>
         <div className="bg-surface-tertiary/50 px-5 py-3 flex gap-4">
           <Skeleton height={12} width={60} />

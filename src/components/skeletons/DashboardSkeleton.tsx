@@ -4,13 +4,6 @@ import Skeleton from "@/components/ui/Skeleton";
 export default function DashboardSkeleton() {
   return (
     <div className="space-y-8">
-      {/* PageHeader */}
-      <div className="flex items-center justify-between">
-        <Skeleton height={32} width={120} />
-        <Skeleton height={24} width={160} className="rounded-full" />
-      </div>
-
-      {/* 요약 통계 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {[0, 1].map((i) => (
           <Card key={i} className="p-5">
@@ -25,7 +18,6 @@ export default function DashboardSkeleton() {
         ))}
       </div>
 
-      {/* 이번 달 청소 배정 */}
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-5">
           <Skeleton height={20} width={20} className="rounded" />

@@ -4,13 +4,6 @@ import Skeleton from "@/components/ui/Skeleton";
 export default function EmployeesSkeleton() {
   return (
     <div className="space-y-6">
-      {/* PageHeader */}
-      <div className="flex items-center gap-3">
-        <Skeleton height={32} width={120} />
-        <Skeleton height={24} width={50} className="rounded-full" />
-      </div>
-
-      {/* 등록 폼 */}
       <Card className="p-6">
         <Skeleton height={16} width={80} className="mb-3" />
         <div className="flex gap-3">
@@ -19,7 +12,6 @@ export default function EmployeesSkeleton() {
         </div>
       </Card>
 
-      {/* 테이블 */}
       <Card>
         <div className="p-0">
           <div className="bg-surface-tertiary/50 px-5 py-3 flex gap-4">

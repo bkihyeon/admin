@@ -4,13 +4,6 @@ import Skeleton from "@/components/ui/Skeleton";
 export default function RecyclingSkeleton() {
   return (
     <div className="space-y-6">
-      {/* PageHeader */}
-      <div className="flex items-center justify-between">
-        <Skeleton height={32} width={140} />
-        <Skeleton height={44} width={160} className="rounded-lg" />
-      </div>
-
-      {/* 4주차 카드 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[1, 2, 3, 4].map((i) => (
           <Card key={i} className="overflow-hidden">
@@ -26,6 +19,17 @@ export default function RecyclingSkeleton() {
           </Card>
         ))}
       </div>
+
+      <Card className="p-5">
+        <div className="flex items-start gap-3">
+          <Skeleton height={18} width={18} className="rounded mt-0.5" />
+          <div className="flex-1 space-y-1.5">
+            <Skeleton height={14} width={100} />
+            <Skeleton height={14} className="w-full" />
+            <Skeleton height={14} width={200} />
+          </div>
+        </div>
+      </Card>
     </div>
   );
 }

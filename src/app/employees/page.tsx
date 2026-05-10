@@ -1,15 +1,22 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Pencil, PlusCircle, Trash2, Users } from "lucide-react";
 import { useState } from "react";
 import EmployeesSkeleton from "@/components/skeletons/EmployeesSkeleton";
 import Button from "@/components/ui/Button";
+import { BlurFade } from "@/components/ui/blur-fade";
 import Card from "@/components/ui/Card";
 import EmptyState from "@/components/ui/EmptyState";
 import Input from "@/components/ui/Input";
 import PageHeader from "@/components/ui/PageHeader";
 import { useOffice } from "@/contexts/OfficeContext";
+import { useDelayedPending } from "@/lib/hooks/useDelayedPending";
 import { queryKeys } from "@/lib/query-keys";
 import type { Employee } from "@/lib/types";
 
@@ -21,14 +28,18 @@ export default function EmployeesPage() {
   const [editName, setEditName] = useState("");
   const [editOfficeId, setEditOfficeId] = useState<string>("");
 
-  const { data: employees = [], isLoading } = useQuery({
+  const { data, isPending } = useQuery({
     queryKey: queryKeys.employees(selectedOfficeId),
     queryFn: async () => {
       const res = await fetch(`/api/employees?officeId=${selectedOfficeId}`);
       return res.json() as Promise<Employee[]>;
     },
     enabled: !!selectedOfficeId,
+    placeholderData: keepPreviousData,
   });
+
+  const showSkeleton = useDelayedPending(isPending);
+  const employees = data ?? [];
 
   const invalidate = () => {
     queryClient.invalidateQueries({
@@ -96,169 +107,181 @@ export default function EmployeesPage() {
   const getOfficeName = (oid: string | null) =>
     offices.find((o) => o.id === oid)?.name ?? null;
 
-  if (isLoading) return <EmployeesSkeleton />;
-
   return (
     <div className="space-y-6">
-      <PageHeader title="사원 관리" badge={`${employees.length}명`} />
+      <BlurFade delay={0}>
+        <PageHeader title="사원 관리" badge={`${employees.length}명`} />
+      </BlurFade>
 
-      <Card className="p-6">
-        <h3 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-2">
-          <PlusCircle size={16} className="text-primary-500" />
-          사원 등록
-        </h3>
-        <div className="flex gap-3 items-end">
-          <div className="flex-1">
-            <label
-              htmlFor="employee-name"
-              className="block text-xs font-medium text-text-secondary mb-1.5"
-            >
-              이름
-            </label>
-            <Input
-              id="employee-name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) =>
-                e.key === "Enter" && !e.nativeEvent.isComposing && handleAdd()
-              }
-              placeholder="이름 입력"
-              className="w-full"
-            />
-          </div>
-          <Button onClick={handleAdd}>등록</Button>
-        </div>
-      </Card>
+      {showSkeleton ? (
+        <EmployeesSkeleton />
+      ) : isPending ? null : (
+        <>
+          <BlurFade delay={0.1}>
+            <Card className="p-6">
+              <h3 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-2">
+                <PlusCircle size={16} className="text-primary-500" />
+                사원 등록
+              </h3>
+              <div className="flex gap-3 items-end">
+                <div className="flex-1">
+                  <label
+                    htmlFor="employee-name"
+                    className="block text-xs font-medium text-text-secondary mb-1.5"
+                  >
+                    이름
+                  </label>
+                  <Input
+                    id="employee-name"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    onKeyDown={(e) =>
+                      e.key === "Enter" &&
+                      !e.nativeEvent.isComposing &&
+                      handleAdd()
+                    }
+                    placeholder="이름 입력"
+                    className="w-full"
+                  />
+                </div>
+                <Button onClick={handleAdd}>등록</Button>
+              </div>
+            </Card>
+          </BlurFade>
 
-      <Card>
-        {employees.length === 0 ? (
-          <EmptyState
-            icon={Users}
-            title="등록된 사원이 없습니다"
-            description="첫 번째 사원을 등록해보세요."
-          />
-        ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="bg-surface-tertiary/50">
-                <th className="text-left py-3 px-5 text-xs font-semibold text-text-tertiary uppercase tracking-wider w-16">
-                  번호
-                </th>
-                <th className="text-left py-3 px-5 text-xs font-semibold text-text-tertiary uppercase tracking-wider">
-                  이름
-                </th>
-                <th className="text-center py-3 px-5 text-xs font-semibold text-text-tertiary uppercase tracking-wider w-32">
-                  사무실
-                </th>
-                <th className="text-right py-3 px-5 text-xs font-semibold text-text-tertiary uppercase tracking-wider w-40">
-                  관리
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {employees.map((emp, idx) => (
-                <tr
-                  key={emp.id}
-                  className={`border-b border-border-light last:border-0 transition-colors duration-150 ${
-                    editingId === emp.id
-                      ? "bg-primary-50/50"
-                      : "hover:bg-surface-secondary"
-                  }`}
-                >
-                  <td className="py-4 px-5 text-xs text-text-tertiary font-mono">
-                    {idx + 1}
-                  </td>
-                  <td className="py-4 px-5">
-                    {editingId === emp.id ? (
-                      <Input
-                        inputSize="sm"
-                        type="text"
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        onKeyDown={(e) =>
-                          e.key === "Enter" &&
-                          !e.nativeEvent.isComposing &&
-                          handleUpdate(emp.id)
-                        }
-                        autoFocus
-                      />
-                    ) : (
-                      <span className="text-sm font-medium text-text-primary">
-                        {emp.name}
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-4 px-5 text-center">
-                    {editingId === emp.id ? (
-                      <select
-                        value={editOfficeId}
-                        onChange={(e) => setEditOfficeId(e.target.value)}
-                        className="w-full h-8 rounded-lg border border-border-light bg-white px-2 text-xs text-text-primary"
+          <BlurFade delay={0.2}>
+            <Card>
+              {employees.length === 0 ? (
+                <EmptyState
+                  icon={Users}
+                  title="등록된 사원이 없습니다"
+                  description="첫 번째 사원을 등록해보세요."
+                />
+              ) : (
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-surface-tertiary/50">
+                      <th className="text-left py-3 px-5 text-xs font-semibold text-text-tertiary uppercase tracking-wider w-16">
+                        번호
+                      </th>
+                      <th className="text-left py-3 px-5 text-xs font-semibold text-text-tertiary uppercase tracking-wider">
+                        이름
+                      </th>
+                      <th className="text-center py-3 px-5 text-xs font-semibold text-text-tertiary uppercase tracking-wider w-32">
+                        사무실
+                      </th>
+                      <th className="text-right py-3 px-5 text-xs font-semibold text-text-tertiary uppercase tracking-wider w-40">
+                        관리
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {employees.map((emp, idx) => (
+                      <tr
+                        key={emp.id}
+                        className={`border-b border-border-light last:border-0 transition-colors duration-150 ${
+                          editingId === emp.id
+                            ? "bg-primary-50/50"
+                            : "hover:bg-surface-secondary"
+                        }`}
                       >
-                        <option value="">미지정</option>
-                        {offices.map((o) => (
-                          <option key={o.id} value={o.id}>
-                            {o.name}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <span
-                        className={`text-xs ${getOfficeName(emp.officeId) ? "text-text-primary font-medium" : "text-text-tertiary"}`}
-                      >
-                        {getOfficeName(emp.officeId) ?? "미지정"}
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-4 px-5 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      {editingId === emp.id ? (
-                        <>
-                          <Button
-                            size="sm"
-                            onClick={() => handleUpdate(emp.id)}
-                          >
-                            저장
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setEditingId(null)}
-                          >
-                            취소
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setEditingId(emp.id);
-                              setEditName(emp.name);
-                              setEditOfficeId(emp.officeId ?? "");
-                            }}
-                          >
-                            <Pencil size={14} /> 수정
-                          </Button>
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            onClick={() => handleDelete(emp.id, emp.name)}
-                          >
-                            <Trash2 size={14} /> 삭제
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </Card>
+                        <td className="py-4 px-5 text-xs text-text-tertiary font-mono">
+                          {idx + 1}
+                        </td>
+                        <td className="py-4 px-5">
+                          {editingId === emp.id ? (
+                            <Input
+                              inputSize="sm"
+                              type="text"
+                              value={editName}
+                              onChange={(e) => setEditName(e.target.value)}
+                              onKeyDown={(e) =>
+                                e.key === "Enter" &&
+                                !e.nativeEvent.isComposing &&
+                                handleUpdate(emp.id)
+                              }
+                              autoFocus
+                            />
+                          ) : (
+                            <span className="text-sm font-medium text-text-primary">
+                              {emp.name}
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-4 px-5 text-center">
+                          {editingId === emp.id ? (
+                            <select
+                              value={editOfficeId}
+                              onChange={(e) => setEditOfficeId(e.target.value)}
+                              className="w-full h-8 rounded-lg border border-border-light bg-white px-2 text-xs text-text-primary"
+                            >
+                              <option value="">미지정</option>
+                              {offices.map((o) => (
+                                <option key={o.id} value={o.id}>
+                                  {o.name}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span
+                              className={`text-xs ${getOfficeName(emp.officeId) ? "text-text-primary font-medium" : "text-text-tertiary"}`}
+                            >
+                              {getOfficeName(emp.officeId) ?? "미지정"}
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-4 px-5 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {editingId === emp.id ? (
+                              <>
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleUpdate(emp.id)}
+                                >
+                                  저장
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setEditingId(null)}
+                                >
+                                  취소
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setEditingId(emp.id);
+                                    setEditName(emp.name);
+                                    setEditOfficeId(emp.officeId ?? "");
+                                  }}
+                                >
+                                  <Pencil size={14} /> 수정
+                                </Button>
+                                <Button
+                                  variant="danger"
+                                  size="sm"
+                                  onClick={() => handleDelete(emp.id, emp.name)}
+                                >
+                                  <Trash2 size={14} /> 삭제
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </Card>
+          </BlurFade>
+        </>
+      )}
     </div>
   );
 }
