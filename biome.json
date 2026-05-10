@@ -16,8 +16,7 @@
       "!**/playwright-report",
       "!**/test-results",
       "!drizzle/**/*.sql",
-      "!next-env.d.ts",
-      "!**/*.css"
+      "!next-env.d.ts"
     ]
   },
   "formatter": {
@@ -48,8 +47,7 @@
     }
   },
   "css": {
-    "formatter": { "enabled": false },
-    "linter": { "enabled": false }
+    "parser": { "tailwindDirectives": true }
   },
   "assist": {
     "enabled": true,
