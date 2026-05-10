@@ -46,7 +46,9 @@ pnpm test:e2e:report          # 직전 실행 HTML report
 - `src/lib/db/client.ts` — Neon HTTP 드라이버 + Drizzle 인스턴스. `DATABASE_URL`을 모듈 로드 시점에 읽음
 - `src/lib/db/repositories/` — 엔티티별 CRUD 함수. API 라우트는 여기만 호출 (Drizzle 타입은 외부로 노출하지 않음)
 - `src/lib/db/id.ts` — `generateId()` (8자리 UUID 슬라이스)
-- `src/lib/types.ts` — 모든 엔티티 인터페이스. Drizzle `$type<>()` 힌트와 공유
+- `src/lib/types.ts` — 모든 엔티티 인터페이스 + `MaskedDutyResponse` (UI 응답 타입). Drizzle `$type<>()` 힌트와 공유
+- `src/lib/duties/` — `cards.ts` (`buildCards` 평탄화 + `groupCardsByItem` 그룹핑), `mask.ts` (`maskDuty`로 `dutyItemName` 마스킹·`revealState` 길이 검증)
+- `duties.reveal_state` jsonb (drizzle 0003): `[{cardIndex, isFlipped, flippedAt}]` 배열. 길이가 카드 수와 일치해야 하며, 불일치 시 GET 500 (corruption 가드)
 
 ### 사무실 격리 구조
 - `src/contexts/OfficeContext.tsx` — 전역 사무실 선택 상태 관리 (`useOffice()` 훅). localStorage로 마지막 선택 기억
@@ -64,6 +66,20 @@ pnpm test:e2e:report          # 직전 실행 HTML report
 - duties POST는 officeId 필수. `(month, office_id)` row 단위 upsert — 다른 사무실 row는 영향 없음
 - `recycling_state`는 `id = 1` singleton (한 행만 존재)
 - `duties`에 `(month, office_id) UNIQUE NULLS NOT DISTINCT` 제약 — 사무실별 월별 중복은 DB가 강제, `upsertDuty`가 `ON CONFLICT DO UPDATE` 사용. `NULLS NOT DISTINCT`는 PG15+ 기능으로 `office_id`가 NULL인 케이스(orphan/legacy)도 한 month당 1건으로 강제
+
+### 실시간 카드 뽑기 (멀티유저 동기화)
+- `MaskedDutyResponse`: `dutyItemName`은 `isFlipped=false`일 때 `null`로 마스킹. `freeEmployee`는 `allFlipped=true`일 때만 노출
+- `POST /api/duties/flip` `(month, officeId, cardIndex)` — 멱등. 두 번 호출해도 `flippedAt` 보존, 잘못된 인덱스는 404, 검증 실패는 400
+- `POST /api/duties` 신규 게임 시 `revealState` 초기화 (모든 `isFlipped=false`)
+- 클라이언트 폴링: `refetchInterval` 동적 — 데이터 없거나 진행 중이면 1.5s, `allFlipped=true`이면 멈춤 (`src/app/duties/page.tsx`)
+
+### 진행 중 게임 가드
+- 메인 "뽑기" 버튼: `hasGame && !allFlipped`이면 `disabled` (다른 탭의 진행 중 게임도 폴링으로 감지)
+- 진행 중 카드 영역: "새로 뽑기" (danger, `confirm` 후 새 게임으로 덮어씀) + "참가하기" (CardFlipModal 재오픈)
+- 완료(`allFlipped=true`) 상태에서만 메인 버튼 enabled — 기존 `confirm("배정이 이미 있습니다")` 경로 유지
+
+### 운영 토글
+- `src/proxy.ts` (Next 16에서 `middleware.ts` → `proxy.ts` 리네이밍): `MAINTENANCE=1`이면 `/_next`, `/favicon`, `/maintenance` 외 모든 요청을 503 + `Retry-After:60`으로 차단. schema 마이그레이션 cutover용
 
 ### 핵심 비즈니스 로직 (DB와 독립된 순수 함수)
 - `src/lib/random-assign.ts` — Fisher-Yates 셔플 기반 청소 담당 랜덤 배정. `assignDutiesForOffice()`로 단일 사무실 배정. 풀 소진 시 재셔플(다른 항목 간 중복 허용)

@@ -1,36 +1,37 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 청소 담당 관리
 
-## Getting Started
+회사 사무실의 월별 청소 담당을 랜덤 뽑기로 배정하는 풀스택 앱.
+사무실별로 사원/청소 품목을 등록하면 매월 카드 뽑기 모드(멀티유저 폴링 동기화)로 배정 결과를 공개한다.
 
-First, run the development server:
+## 기술 스택
+
+- Next.js 16 (App Router) + TypeScript strict
+- Tailwind CSS v4
+- Neon Postgres + Drizzle ORM (HTTP 드라이버)
+- Vercel 배포
+
+## 시작하기
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
+cp .env.example .env.local        # DATABASE_URL 채우기 (Neon pooled connection string)
+pnpm drizzle-kit migrate
+pnpm dev                          # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 주요 명령어
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| 명령 | 설명 |
+|---|---|
+| `pnpm dev` | 개발 서버 |
+| `pnpm build` / `pnpm start` | 프로덕션 |
+| `pnpm lint` | ESLint |
+| `pnpm test:e2e` | Playwright E2E (`docs/e2e.md` 참조) |
+| `pnpm drizzle-kit generate` | schema.ts → 마이그레이션 SQL 생성 |
+| `pnpm drizzle-kit migrate` | 마이그레이션 적용 |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 문서
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [`CLAUDE.md`](./CLAUDE.md) — 아키텍처 / 데이터 모델 / 관례
+- [`docs/e2e.md`](./docs/e2e.md) — E2E 테스트 가이드
+- [`docs/deployment-plan.md`](./docs/deployment-plan.md) — 배포 계획
