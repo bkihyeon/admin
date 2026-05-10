@@ -9,6 +9,14 @@ async function selectOffice(page: import("@playwright/test").Page, name: string)
 
 const closeFlipModal = completeFlipModal;
 
+/**
+ * 본 spec은 **완료된 게임**(allFlipped=true) 재뽑기 경로를 검증한다.
+ * closeFlipModal=completeFlipModal이 모든 카드를 flip해 allFlipped=true로 만들고
+ * 모달을 닫으므로, 두 번째 "뽑기" 클릭 시점은 메인 버튼이 enabled 상태이고 기존
+ * "배정이 이미 있습니다" confirm이 트리거된다. 진행 중(allFlipped=false) 게임에서
+ * 메인 버튼이 disabled되고 별도 "새로 뽑기"로 라우팅되는 시나리오는
+ * `duties-in-progress-guard.spec.ts`에서 분리 검증.
+ */
 test("같은 월 재배정 confirm 후 새 결과 반영", async ({ page, db }) => {
   const office = await db.seedOffice("재배정사무소");
   await db.seedEmployees(office.id, ["가나", "다라", "마바"]);

@@ -211,8 +211,8 @@ test("AC-2: 두 탭에서 한쪽 카드 flip → 다른 탭이 polling으로 동
     );
     await p.goto("/duties");
     // 카드 모달이 자동으로 열리지 않으므로 — 게임을 만든 뒤 진입한 상태.
-    // duty.cards.length > 0이지만 modal은 닫혀 있고 "계속하기" 버튼이 보임.
-    await p.getByRole("button", { name: /계속하기/ }).click();
+    // duty.cards.length > 0이지만 modal은 닫혀 있고 "참가하기" 버튼이 보임.
+    await p.getByRole("button", { name: /참가하기/ }).click();
     await p.getByTestId("flip-card-0").waitFor({ state: "visible" });
   }
 
@@ -285,7 +285,7 @@ test("AC-5: 진행 중 reload → flipped 카드만 dutyItemName 공개", async 
     [office.id],
   );
   await page.goto("/duties");
-  await page.getByRole("button", { name: /계속하기/ }).click();
+  await page.getByRole("button", { name: /참가하기/ }).click();
 
   // card 1만 공개
   await expect(page.getByTestId("flip-card-1-item")).toBeVisible({ timeout: 4000 });

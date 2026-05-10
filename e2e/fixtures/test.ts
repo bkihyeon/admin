@@ -18,6 +18,19 @@ export const acceptDialog = (page: Page, expectedText?: string) =>
   });
 
 /**
+ * CardFlipModal을 카드 flip 없이 X 버튼으로 닫는 헬퍼.
+ * in-progress 상태를 유지(allFlipped=false)하여 진행 중 카드 + 강제 재뽑기 가드를
+ * 검증하기 위해 사용.
+ */
+export async function closeFlipModalOnly(page: Page) {
+  await expect(page.getByRole("heading", { name: "청소 배정 결과" })).toBeVisible();
+  await page.getByRole("button", { name: "닫기" }).click();
+  await expect(
+    page.getByRole("heading", { name: "청소 배정 결과" }),
+  ).not.toBeVisible();
+}
+
+/**
  * CardFlipModal에서 모든 카드를 순차로 클릭하여 게임을 종료한 뒤 모달을 닫는 헬퍼.
  * 멀티유저 모드 전환 후 "전체 공개" 버튼이 제거되어, 카드 개별 클릭으로 진행해야 함.
  */

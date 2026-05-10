@@ -85,15 +85,28 @@ export default function DutiesPage() {
 
   const draw = async () => {
     if (!selectedOfficeId) return;
-    if (duty && duty.cards.length > 0) {
+    // inProgress 상태는 메인 버튼이 disabled라 도달 불가. 완료된 게임 재뽑기 케이스만 confirm.
+    if (duty && duty.cards.length > 0 && duty.allFlipped) {
       if (!confirm(`${selectedOffice?.name} 배정이 이미 있습니다. 새로 뽑으시겠습니까?`)) return;
     }
+    drawMutation.mutate();
+  };
+
+  const rerun = () => {
+    if (!selectedOfficeId) return;
+    if (
+      !confirm(
+        "진행 중인 게임을 취소하고 새로 뽑으시겠습니까? 현재 공개된 카드는 모두 사라집니다.",
+      )
+    )
+      return;
     drawMutation.mutate();
   };
 
   if (isLoading) return <DutiesSkeleton />;
 
   const hasGame = !!duty && duty.cards.length > 0;
+  const inProgress = hasGame && !duty.allFlipped;
   const showResults = hasGame && duty.allFlipped;
 
   // 결과 페이지에서 보일 항목별 그룹핑 (allFlipped 시점에만 노출)
@@ -102,7 +115,13 @@ export default function DutiesPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="청소 배정" badge={currentMonth}>
-        <Button variant="gradient-primary" size="lg" onClick={draw} disabled={drawMutation.isPending || !selectedOfficeId}>
+        <Button
+          variant="gradient-primary"
+          size="lg"
+          onClick={draw}
+          disabled={drawMutation.isPending || !selectedOfficeId || inProgress}
+          data-testid="main-draw-btn"
+        >
           {drawMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <Dices size={18} />}
           {drawMutation.isPending ? "배정 중..." : "뽑기"}
         </Button>
@@ -112,7 +131,7 @@ export default function DutiesPage() {
 
       {hasGame && !duty.allFlipped && !showFlipModal && (
         <Card className="p-5 border-dashed">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
               <div className="text-sm font-semibold text-text-primary">
                 진행 중인 게임이 있습니다
@@ -121,9 +140,20 @@ export default function DutiesPage() {
                 {duty.cards.filter((c) => c.isFlipped).length}/{duty.cards.length} 카드 공개됨
               </div>
             </div>
-            <Button variant="primary" size="md" onClick={() => setShowFlipModal(true)}>
-              계속하기
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="danger"
+                size="md"
+                onClick={rerun}
+                disabled={drawMutation.isPending}
+                data-testid="rerun-btn"
+              >
+                새로 뽑기
+              </Button>
+              <Button variant="primary" size="md" onClick={() => setShowFlipModal(true)}>
+                참가하기
+              </Button>
+            </div>
           </div>
         </Card>
       )}
