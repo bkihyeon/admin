@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useOffice } from "@/contexts/OfficeContext";
-import { CleaningDuty } from "@/lib/types";
+import type { MaskedDutyResponse } from "@/lib/types";
 import { queryKeys } from "@/lib/query-keys";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
@@ -11,28 +11,34 @@ import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import HistorySkeleton from "@/components/skeletons/HistorySkeleton";
 import { Clock } from "lucide-react";
+import { groupCardsByItem } from "@/lib/duties/cards";
 
 export default function HistoryPage() {
   const { selectedOfficeId } = useOffice();
-  // 사용자가 직접 선택한 월 (없으면 첫 항목으로 파생)
   const [pickedMonth, setPickedMonth] = useState<string | null>(null);
 
-  const { data: duties = [], isLoading } = useQuery({
+  const { data: allDuties = [], isLoading } = useQuery<MaskedDutyResponse[]>({
     queryKey: queryKeys.duties(selectedOfficeId),
     queryFn: async () => {
       const res = await fetch(`/api/duties?officeId=${selectedOfficeId}`);
-      return res.json() as Promise<CleaningDuty[]>;
+      return res.json() as Promise<MaskedDutyResponse[]>;
     },
     enabled: !!selectedOfficeId,
   });
+
+  // 진행 중 게임은 history에 노출하지 않음.
+  const duties = allDuties.filter((d) => d.allFlipped);
 
   const pickedValid = pickedMonth && duties.some((d) => d.month === pickedMonth);
   const selectedMonth = pickedValid ? pickedMonth : duties[0]?.month ?? "";
   const selectedDuty = duties.find((d) => d.month === selectedMonth);
   const months = duties.map((d) => d.month);
-  const freeEmployee = selectedDuty?.freeEmployee;
 
   if (isLoading) return <HistorySkeleton />;
+
+  const groups = selectedDuty ? groupCardsByItem(selectedDuty.cards) : [];
+  const dutyItemGroups = groups.filter((g) => !g.isFree);
+  const freeEmployeeNames = selectedDuty?.freeEmployee?.employeeNames ?? [];
 
   return (
     <div className="space-y-6">
@@ -73,16 +79,16 @@ export default function HistoryPage() {
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {selectedDuty.assignments.map((a) => (
+                {dutyItemGroups.map((g) => (
                   <div
-                    key={a.dutyItemId}
+                    key={g.name}
                     className="rounded-lg bg-surface-secondary border border-border-light p-4"
                   >
                     <div className="text-sm font-semibold text-text-primary mb-2">
-                      {a.dutyItemName}
+                      {g.name}
                     </div>
                     <div className="flex flex-wrap gap-1.5">
-                      {a.assignedEmployeeNames.map((name, i) => (
+                      {g.employees.map((name, i) => (
                         <Badge key={i} variant="neutral">{name}</Badge>
                       ))}
                     </div>
@@ -90,10 +96,10 @@ export default function HistoryPage() {
                 ))}
               </div>
 
-              {freeEmployee && freeEmployee.employeeNames.length > 0 && (
+              {freeEmployeeNames.length > 0 && (
                 <div className="mt-3 flex items-center gap-2 flex-wrap">
                   <span className="text-xs text-text-tertiary font-medium">프리:</span>
-                  {freeEmployee.employeeNames.map((name, i) => (
+                  {freeEmployeeNames.map((name, i) => (
                     <Badge key={i} variant="neutral">{name}</Badge>
                   ))}
                 </div>

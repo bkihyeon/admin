@@ -68,12 +68,12 @@ test("두 사무실이 같은 월에 동시 뽑기를 해도 양쪽 결과가 �
     ).json();
 
     expect(
-      dutyA?.assignments?.length ?? 0,
-      `iter ${i}: A의 assignments 누락 (race 발생)`,
+      dutyA?.cards?.length ?? 0,
+      `iter ${i}: A의 cards 누락 (race 발생)`,
     ).toBeGreaterThan(0);
     expect(
-      dutyB?.assignments?.length ?? 0,
-      `iter ${i}: B의 assignments 누락 (race 발생)`,
+      dutyB?.cards?.length ?? 0,
+      `iter ${i}: B의 cards 누락 (race 발생)`,
     ).toBeGreaterThan(0);
   }
 });

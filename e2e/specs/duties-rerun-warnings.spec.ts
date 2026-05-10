@@ -1,4 +1,4 @@
-import { test, expect, acceptDialog } from "../fixtures/test";
+import { test, expect, acceptDialog, completeFlipModal } from "../fixtures/test";
 
 async function selectOffice(page: import("@playwright/test").Page, name: string) {
   await expect(
@@ -7,17 +7,7 @@ async function selectOffice(page: import("@playwright/test").Page, name: string)
   await page.locator("aside select").selectOption({ label: name });
 }
 
-async function closeFlipModal(page: import("@playwright/test").Page) {
-  await expect(page.getByRole("heading", { name: "청소 배정 결과" })).toBeVisible();
-  // '전체 공개'는 모달 첫 상태에 항상 노출. isVisible()은 non-retrying이라 opacity
-  // 트랜지션 중 false 반환 가능 → 분기 제거하고 click()의 actionability 폴링에 위임.
-  await page.getByRole("button", { name: "전체 공개" }).click();
-  // '확인'은 allFlipped=true 후에만 등장. click()이 등장까지 대기.
-  await page.getByRole("button", { name: "확인" }).click();
-  await expect(
-    page.getByRole("heading", { name: "청소 배정 결과" }),
-  ).not.toBeVisible();
-}
+const closeFlipModal = completeFlipModal;
 
 test("같은 월 재배정 confirm 후 새 결과 반영", async ({ page, db }) => {
   const office = await db.seedOffice("재배정사무소");

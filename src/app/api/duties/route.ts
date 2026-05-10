@@ -8,8 +8,18 @@ import {
   listDutiesByOffice,
   upsertDuty,
 } from "@/lib/db/repositories/duties";
+import { maskDuty } from "@/lib/duties/mask";
+import type { MaskedDutyResponse } from "@/lib/types";
 
-export async function GET(request: Request) {
+type GetResponse =
+  | MaskedDutyResponse
+  | MaskedDutyResponse[]
+  | null
+  | { error: string };
+
+export async function GET(
+  request: Request,
+): Promise<NextResponse<GetResponse>> {
   const { searchParams } = new URL(request.url);
   const month = searchParams.get("month");
   const officeId = searchParams.get("officeId");
@@ -20,14 +30,29 @@ export async function GET(request: Request) {
 
   if (month) {
     const duty = await getDutyByMonthAndOffice(month, officeId);
-    return NextResponse.json(duty);
+    if (!duty) return NextResponse.json(null);
+    try {
+      return NextResponse.json(maskDuty(duty));
+    } catch {
+      return NextResponse.json({ error: "internal" }, { status: 500 });
+    }
   }
 
-  const duties = await listDutiesByOffice(officeId);
-  return NextResponse.json(duties);
+  const list = await listDutiesByOffice(officeId);
+  try {
+    return NextResponse.json(list.map(maskDuty));
+  } catch {
+    return NextResponse.json({ error: "internal" }, { status: 500 });
+  }
 }
 
-export async function POST(request: Request) {
+type PostResponse =
+  | { duty: MaskedDutyResponse; warning: string | null }
+  | { error: string };
+
+export async function POST(
+  request: Request,
+): Promise<NextResponse<PostResponse>> {
   const { month, officeId } = await request.json();
   if (!month) {
     return NextResponse.json({ error: "월을 지정해주세요" }, { status: 400 });
@@ -70,5 +95,9 @@ export async function POST(request: Request) {
       ? `${officeName}: 필요 인원(${reqCount}명) > 사원 수(${officeEmployees.length}명), 일부 중복 배정`
       : null;
 
-  return NextResponse.json({ duty, warning }, { status: 201 });
+  try {
+    return NextResponse.json({ duty: maskDuty(duty), warning }, { status: 201 });
+  } catch {
+    return NextResponse.json({ error: "internal" }, { status: 500 });
+  }
 }

@@ -1,4 +1,4 @@
-import { test, expect } from "../fixtures/test";
+import { test, expect, completeFlipModal } from "../fixtures/test";
 
 test("등록 → 사원/항목 추가 → 뽑기 → 이력 확인 (전체 골든 패스)", async ({
   page,
@@ -48,17 +48,9 @@ test("등록 → 사원/항목 추가 → 뽑기 → 이력 확인 (전체 골�
   await expect(drawBtn).toBeEnabled();
   await drawBtn.click();
 
-  // CardFlipModal 등장 — '전체 공개'는 첫 상태에 항상 노출 (allFlipped=false).
-  // isVisible()은 non-retrying이라 opacity 트랜지션 중 false 반환 가능 → 분기 제거하고
-  // click()의 actionability 폴링에 위임.
-  await expect(page.getByRole("heading", { name: "청소 배정 결과" })).toBeVisible();
-  await page.getByRole("button", { name: "전체 공개" }).click();
-
-  // '확인'은 allFlipped=true일 때만 등장. click()이 등장까지 대기.
-  await page.getByRole("button", { name: "확인" }).click();
-  await expect(
-    page.getByRole("heading", { name: "청소 배정 결과" }),
-  ).not.toBeVisible();
+  // CardFlipModal 등장 — 멀티유저 모드 전환 후 "전체 공개" 버튼은 제거됨.
+  // completeFlipModal 헬퍼가 카드를 순차로 클릭해 allFlipped=true로 만든 뒤 '확인' 클릭.
+  await completeFlipModal(page);
 
   // 결과 카드에 사원 이름 노출 (모달 닫힌 뒤 페이지의 결과 영역 검증)
   for (const name of ["김철수", "이영희", "박민수"]) {

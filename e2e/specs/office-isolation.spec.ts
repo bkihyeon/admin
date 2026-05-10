@@ -1,4 +1,4 @@
-import { test, expect } from "../fixtures/test";
+import { test, expect, completeFlipModal } from "../fixtures/test";
 
 async function selectOffice(page: import("@playwright/test").Page, name: string) {
   await expect(
@@ -7,16 +7,7 @@ async function selectOffice(page: import("@playwright/test").Page, name: string)
   await page.locator("aside select").selectOption({ label: name });
 }
 
-async function closeFlipModal(page: import("@playwright/test").Page) {
-  await expect(page.getByRole("heading", { name: "청소 배정 결과" })).toBeVisible();
-  // '전체 공개'는 첫 상태에 항상 노출. isVisible()은 non-retrying이라 opacity
-  // 트랜지션 중 false 반환 가능 → click()의 actionability 폴링에 위임.
-  await page.getByRole("button", { name: "전체 공개" }).click();
-  await page.getByRole("button", { name: "확인" }).click();
-  await expect(
-    page.getByRole("heading", { name: "청소 배정 결과" }),
-  ).not.toBeVisible();
-}
+const closeFlipModal = completeFlipModal;
 
 test("사무실 격리: A·B 배정이 JSONB merge로 모두 보존됨", async ({
   page,

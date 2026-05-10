@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useOffice } from "@/contexts/OfficeContext";
-import { CleaningDuty } from "@/lib/types";
+import type { MaskedDutyResponse } from "@/lib/types";
 import { queryKeys } from "@/lib/query-keys";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
@@ -11,6 +11,7 @@ import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
 import { ClipboardCheck, Users, Clipboard } from "lucide-react";
+import { groupCardsByItem } from "@/lib/duties/cards";
 
 export default function Dashboard() {
   const { selectedOfficeId } = useOffice();
@@ -26,32 +27,30 @@ export default function Dashboard() {
     []
   );
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading } = useQuery<MaskedDutyResponse | null>({
     queryKey: queryKeys.duties(selectedOfficeId, currentMonth),
     queryFn: async () => {
       const res = await fetch(`/api/duties?month=${currentMonth}&officeId=${selectedOfficeId}`);
-      const data: CleaningDuty | null = await res.json();
+      const data: MaskedDutyResponse | null = await res.json();
       return data;
     },
     enabled: !!selectedOfficeId,
   });
 
   const duty = data ?? null;
+  const completed = !!duty && duty.allFlipped;
 
   if (isLoading) return <DashboardSkeleton />;
 
-  const totalAssigned = duty?.assignments.reduce(
-    (sum, a) => sum + a.assignedEmployeeNames.length,
-    0
-  ) ?? 0;
-
+  const groups = completed ? groupCardsByItem(duty.cards) : [];
+  const dutyItemGroups = groups.filter((g) => !g.isFree);
+  const totalAssigned = dutyItemGroups.reduce((sum, g) => sum + g.employees.length, 0);
   const freeEmployee = duty?.freeEmployee;
 
   return (
     <div className="space-y-8">
       <PageHeader title="대시보드" badge={today} />
 
-      {/* 요약 통계 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Card className="p-5">
           <div className="flex items-center gap-4">
@@ -61,7 +60,7 @@ export default function Dashboard() {
             <div>
               <p className="text-xs text-text-tertiary font-medium">배정 항목</p>
               <p className="text-2xl font-bold text-text-primary">
-                {duty?.assignments.length ?? 0}
+                {dutyItemGroups.length}
               </p>
             </div>
           </div>
@@ -79,7 +78,6 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* 이번 달 청소 배정 */}
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-5">
           <ClipboardCheck size={20} strokeWidth={1.5} className="text-primary-500" />
@@ -87,20 +85,23 @@ export default function Dashboard() {
             이번 달 청소 배정
           </h3>
           <Badge variant="neutral">{currentMonth}</Badge>
+          {duty && !duty.allFlipped && duty.cards.length > 0 && (
+            <Badge variant="primary">진행 중</Badge>
+          )}
         </div>
-        {duty && duty.assignments.length > 0 ? (
+        {completed ? (
           <div className="space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {duty.assignments.map((a) => (
+              {dutyItemGroups.map((g) => (
                 <div
-                  key={a.dutyItemId}
+                  key={g.name}
                   className="rounded-lg bg-gradient-to-br from-primary-50 to-primary-100/50 border border-primary-100 p-4"
                 >
                   <div className="text-sm font-semibold text-primary-800 mb-2">
-                    {a.dutyItemName}
+                    {g.name}
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {a.assignedEmployeeNames.map((name, i) => (
+                    {g.employees.map((name, i) => (
                       <Badge key={i} variant="primary">{name}</Badge>
                     ))}
                   </div>
@@ -119,8 +120,16 @@ export default function Dashboard() {
         ) : (
           <EmptyState
             icon={Clipboard}
-            title="이번 달 배정이 없습니다"
-            description="청소 배정 페이지에서 랜덤 뽑기를 진행해주세요."
+            title={
+              duty && duty.cards.length > 0
+                ? "이번 달 게임이 진행 중입니다"
+                : "이번 달 배정이 없습니다"
+            }
+            description={
+              duty && duty.cards.length > 0
+                ? "청소 배정 페이지에서 카드를 모두 공개하세요."
+                : "청소 배정 페이지에서 랜덤 뽑기를 진행해주세요."
+            }
             actionLabel="청소 배정으로 이동"
             actionHref="/duties"
           />

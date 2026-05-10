@@ -33,12 +33,38 @@ export interface OfficeFreeEmployees {
   employeeNames: string[];
 }
 
+export interface RevealState {
+  cardIndex: number;
+  isFlipped: boolean;
+  flippedAt: string | null;
+}
+
 export interface CleaningDuty {
   id: string;
   month: string; // "2026-04" 형식
   officeId: string | null;
   assignments: DutyAssignment[];
   freeEmployee: OfficeFreeEmployees | null;
+  revealState: RevealState[];
+  createdAt: string;
+}
+
+export interface MaskedCard {
+  cardIndex: number;
+  employeeName: string;
+  dutyItemName: string | null;
+  isFree: boolean;
+  isFlipped: boolean;
+  flippedAt: string | null;
+}
+
+export interface MaskedDutyResponse {
+  id: string;
+  month: string;
+  officeId: string | null;
+  cards: MaskedCard[];
+  freeEmployee: OfficeFreeEmployees | null;
+  allFlipped: boolean;
   createdAt: string;
 }
 

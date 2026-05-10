@@ -1,5 +1,11 @@
 import { pgTable, text, integer, timestamp, jsonb, unique, index } from "drizzle-orm/pg-core";
-import type { DutyAssignment, OfficeFreeEmployees, RecyclingWeek } from "@/lib/types";
+import { sql } from "drizzle-orm";
+import type {
+  DutyAssignment,
+  OfficeFreeEmployees,
+  RecyclingWeek,
+  RevealState,
+} from "@/lib/types";
 
 export const offices = pgTable("offices", {
   id: text("id").primaryKey(),
@@ -37,6 +43,10 @@ export const duties = pgTable(
     officeId: text("office_id"),
     assignments: jsonb("assignments").$type<DutyAssignment[]>().notNull(),
     freeEmployee: jsonb("free_employee").$type<OfficeFreeEmployees | null>(),
+    revealState: jsonb("reveal_state")
+      .$type<RevealState[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

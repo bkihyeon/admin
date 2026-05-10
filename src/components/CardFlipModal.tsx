@@ -1,43 +1,10 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
-import { CircleHelp, X, Eye, PartyPopper } from "lucide-react";
-import { CleaningDuty } from "@/lib/types";
+import { useEffect, useRef, useState } from "react";
+import { CircleHelp, X, PartyPopper } from "lucide-react";
+import type { MaskedCard } from "@/lib/types";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
-
-interface EmployeeCard {
-  employeeName: string;
-  dutyItemName: string;
-  isFree: boolean;
-}
-
-function buildEmployeeCards(duty: CleaningDuty): EmployeeCard[] {
-  const cards: EmployeeCard[] = [];
-
-  for (const assignment of duty.assignments) {
-    for (const name of assignment.assignedEmployeeNames) {
-      cards.push({
-        employeeName: name,
-        dutyItemName: assignment.dutyItemName,
-        isFree: false,
-      });
-    }
-  }
-
-  const freeEntry = duty.freeEmployee;
-  if (freeEntry) {
-    for (const name of freeEntry.employeeNames) {
-      cards.push({
-        employeeName: name,
-        dutyItemName: "프리",
-        isFree: true,
-      });
-    }
-  }
-
-  return cards;
-}
 
 async function fireConfetti() {
   const confetti = (await import("canvas-confetti")).default;
@@ -60,16 +27,20 @@ async function fireConfetti() {
 }
 
 interface CardFlipModalProps {
-  duty: CleaningDuty;
+  cards: MaskedCard[];
+  allFlipped: boolean;
+  onCardClick: (cardIndex: number) => void;
   onClose: () => void;
 }
 
-export default function CardFlipModal({ duty, onClose }: CardFlipModalProps) {
-  const [cards] = useState(() => buildEmployeeCards(duty));
-  const [flipped, setFlipped] = useState<Set<number>>(new Set());
-  const [isRevealing, setIsRevealing] = useState(false);
+export default function CardFlipModal({
+  cards,
+  allFlipped,
+  onCardClick,
+  onClose,
+}: CardFlipModalProps) {
   const [entered, setEntered] = useState(false);
-  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const confettiFiredRef = useRef(false);
 
   useEffect(() => {
     const prev = document.body.style.overflow;
@@ -77,56 +48,18 @@ export default function CardFlipModal({ duty, onClose }: CardFlipModalProps) {
     requestAnimationFrame(() => setEntered(true));
     return () => {
       document.body.style.overflow = prev;
-      timersRef.current.forEach(clearTimeout);
-      timersRef.current = [];
     };
   }, []);
 
-  const allFlipped = flipped.size === cards.length;
+  useEffect(() => {
+    if (allFlipped && !confettiFiredRef.current) {
+      confettiFiredRef.current = true;
+      const id = setTimeout(fireConfetti, 300);
+      return () => clearTimeout(id);
+    }
+  }, [allFlipped]);
 
-  const flipCard = useCallback(
-    (index: number) => {
-      if (isRevealing) return;
-
-      setFlipped((prev) => {
-        if (prev.has(index)) return prev;
-        const next = new Set(prev);
-        next.add(index);
-        if (next.size === cards.length) {
-          const id = setTimeout(fireConfetti, 300);
-          timersRef.current.push(id);
-        }
-        return next;
-      });
-    },
-    [isRevealing, cards.length],
-  );
-
-  const revealAll = useCallback(() => {
-    if (isRevealing || allFlipped) return;
-    setIsRevealing(true);
-
-    const unflippedIndices = cards
-      .map((_, i) => i)
-      .filter((i) => !flipped.has(i));
-
-    unflippedIndices.forEach((cardIndex, seqIndex) => {
-      const id = setTimeout(() => {
-        setFlipped((prev) => {
-          const next = new Set(prev);
-          next.add(cardIndex);
-
-          if (next.size === cards.length) {
-            const confettiId = setTimeout(fireConfetti, 300);
-            timersRef.current.push(confettiId);
-            setIsRevealing(false);
-          }
-          return next;
-        });
-      }, seqIndex * 250);
-      timersRef.current.push(id);
-    });
-  }, [isRevealing, allFlipped, cards, flipped]);
+  const flippedCount = cards.filter((c) => c.isFlipped).length;
 
   return (
     <div
@@ -134,40 +67,38 @@ export default function CardFlipModal({ duty, onClose }: CardFlipModalProps) {
         entered ? "opacity-100" : "opacity-0"
       }`}
     >
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary-800/90 via-primary-700/85 to-primary-900/90 backdrop-blur-sm" />
 
-      {/* Header */}
       <div className="relative z-10 w-full max-w-3xl px-6 pt-6 pb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <PartyPopper className="text-white/80" size={22} />
           <h2 className="text-lg font-bold text-white">청소 배정 결과</h2>
           <span className="text-sm text-white/60">
-            {flipped.size}/{cards.length}
+            {flippedCount}/{cards.length}
           </span>
         </div>
         <button
           onClick={onClose}
+          aria-label="닫기"
           className="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors"
         >
           <X size={20} />
         </button>
       </div>
 
-      {/* Cards Grid */}
       <div className="relative z-10 flex-1 w-full max-w-3xl px-6 pb-4 overflow-y-auto">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {cards.map((card, index) => (
             <div
-              key={index}
+              key={card.cardIndex}
+              data-testid={`flip-card-${card.cardIndex}`}
               className="flip-card aspect-[3/4] cursor-pointer"
-              onClick={() => flipCard(index)}
+              onClick={() => !card.isFlipped && onCardClick(card.cardIndex)}
               style={{
                 animation: `card-enter 0.4s var(--ease-out-expo) ${index * 0.06}s both`,
               }}
             >
-              <div className={`flip-card-inner ${flipped.has(index) ? "flipped" : ""}`}>
-                {/* Front — 직원 이름 + ? */}
+              <div className={`flip-card-inner ${card.isFlipped ? "flipped" : ""}`}>
                 <div className="flip-card-front bg-surface border border-white/20 shadow-card-hover flex flex-col items-center justify-center gap-3 p-4">
                   <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
                     <CircleHelp size={22} className="text-primary-500" />
@@ -178,7 +109,6 @@ export default function CardFlipModal({ duty, onClose }: CardFlipModalProps) {
                   <span className="text-[11px] text-text-tertiary">터치하여 공개</span>
                 </div>
 
-                {/* Back — 배정 항목 */}
                 <div
                   className={`flip-card-back flex flex-col items-center justify-center gap-3 p-4 border ${
                     card.isFree
@@ -189,9 +119,16 @@ export default function CardFlipModal({ duty, onClose }: CardFlipModalProps) {
                   <span className="text-sm font-semibold text-text-primary text-center">
                     {card.employeeName}
                   </span>
-                  <Badge variant={card.isFree ? "neutral" : "primary"} className="text-sm">
-                    {card.dutyItemName}
-                  </Badge>
+                  {card.dutyItemName !== null && (
+                    <span data-testid={`flip-card-${card.cardIndex}-item`}>
+                      <Badge
+                        variant={card.isFree ? "neutral" : "primary"}
+                        className="text-sm"
+                      >
+                        {card.dutyItemName}
+                      </Badge>
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -199,19 +136,7 @@ export default function CardFlipModal({ duty, onClose }: CardFlipModalProps) {
         </div>
       </div>
 
-      {/* Footer */}
       <div className="relative z-10 w-full max-w-3xl px-6 py-4 flex justify-center gap-3">
-        {!allFlipped && (
-          <Button
-            variant="gradient-primary"
-            size="lg"
-            onClick={revealAll}
-            disabled={isRevealing}
-          >
-            <Eye size={18} />
-            {isRevealing ? "공개 중..." : "전체 공개"}
-          </Button>
-        )}
         {allFlipped && (
           <Button variant="gradient-primary" size="lg" onClick={onClose}>
             확인

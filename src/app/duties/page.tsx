@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useOffice } from "@/contexts/OfficeContext";
-import { CleaningDuty } from "@/lib/types";
+import type { MaskedDutyResponse } from "@/lib/types";
 import { queryKeys } from "@/lib/query-keys";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
@@ -14,6 +14,7 @@ import Alert from "@/components/ui/Alert";
 import DutiesSkeleton from "@/components/skeletons/DutiesSkeleton";
 import { Dices, Loader2, Clock, LayoutGrid } from "lucide-react";
 import CardFlipModal from "@/components/CardFlipModal";
+import { groupCardsByItem } from "@/lib/duties/cards";
 
 export default function DutiesPage() {
   const { selectedOfficeId, selectedOffice } = useOffice();
@@ -23,14 +24,22 @@ export default function DutiesPage() {
 
   const [currentMonth] = useState(() => new Date().toISOString().slice(0, 7));
 
-  const { data: duty = null, isLoading } = useQuery({
+  const { data: duty = null, isLoading } = useQuery<MaskedDutyResponse | null>({
     queryKey: queryKeys.duties(selectedOfficeId, currentMonth),
     queryFn: async () => {
       const res = await fetch(`/api/duties?month=${currentMonth}&officeId=${selectedOfficeId}`);
-      const data: CleaningDuty | null = await res.json();
+      const data: MaskedDutyResponse | null = await res.json();
       return data;
     },
     enabled: !!selectedOfficeId,
+    refetchInterval: (q) => {
+      // 데이터 미존재(다른 탭이 새 게임 시작 가능) 또는 진행 중 → 1500ms polling.
+      // 게임 종료(allFlipped) 시점에만 멈춤 (plan v3 Minor M1).
+      const d = q.state.data;
+      if (!d) return 1500;
+      return d.allFlipped ? false : 1500;
+    },
+    refetchIntervalInBackground: true,
   });
 
   const drawMutation = useMutation({
@@ -42,11 +51,10 @@ export default function DutiesPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      return data as { duty: CleaningDuty; warning?: string };
+      return data as { duty: MaskedDutyResponse; warning: string | null };
     },
     onSuccess: (data) => {
       queryClient.setQueryData(queryKeys.duties(selectedOfficeId, currentMonth), data.duty);
-      // history 페이지의 전체 목록 캐시는 stale 표시만 하고 즉시 refetch는 안 함 (history 진입 시 백그라운드 갱신)
       queryClient.invalidateQueries({
         queryKey: queryKeys.duties(selectedOfficeId),
         refetchType: "none",
@@ -59,17 +67,37 @@ export default function DutiesPage() {
     },
   });
 
+  const flipMutation = useMutation({
+    mutationFn: async (cardIndex: number) => {
+      const res = await fetch("/api/duties/flip", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ month: currentMonth, officeId: selectedOfficeId, cardIndex }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "flip failed");
+      return data as MaskedDutyResponse;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(queryKeys.duties(selectedOfficeId, currentMonth), data);
+    },
+  });
+
   const draw = async () => {
     if (!selectedOfficeId) return;
-    if (duty && duty.assignments.length > 0) {
+    if (duty && duty.cards.length > 0) {
       if (!confirm(`${selectedOffice?.name} 배정이 이미 있습니다. 새로 뽑으시겠습니까?`)) return;
     }
     drawMutation.mutate();
   };
 
-  const freeEmployee = duty?.freeEmployee;
-
   if (isLoading) return <DutiesSkeleton />;
+
+  const hasGame = !!duty && duty.cards.length > 0;
+  const showResults = hasGame && duty.allFlipped;
+
+  // 결과 페이지에서 보일 항목별 그룹핑 (allFlipped 시점에만 노출)
+  const groupedAssignments = showResults ? groupCardsByItem(duty.cards) : [];
 
   return (
     <div className="space-y-6">
@@ -82,30 +110,50 @@ export default function DutiesPage() {
 
       {warning && <Alert>{warning}</Alert>}
 
-      {duty && duty.assignments.length > 0 ? (
+      {hasGame && !duty.allFlipped && !showFlipModal && (
+        <Card className="p-5 border-dashed">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-semibold text-text-primary">
+                진행 중인 게임이 있습니다
+              </div>
+              <div className="text-xs text-text-tertiary mt-1">
+                {duty.cards.filter((c) => c.isFlipped).length}/{duty.cards.length} 카드 공개됨
+              </div>
+            </div>
+            <Button variant="primary" size="md" onClick={() => setShowFlipModal(true)}>
+              계속하기
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {showResults ? (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {duty.assignments.map((a) => (
-              <Card key={a.dutyItemId} hover className="p-5">
-                <div className="text-sm font-semibold text-text-primary pb-3 mb-3 border-b border-border-light">
-                  {a.dutyItemName}
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {a.assignedEmployeeNames.map((name, i) => (
-                    <Badge key={i} variant="primary">{name}</Badge>
-                  ))}
-                </div>
-              </Card>
-            ))}
+            {groupedAssignments
+              .filter((g) => !g.isFree)
+              .map((g) => (
+                <Card key={g.name} hover className="p-5">
+                  <div className="text-sm font-semibold text-text-primary pb-3 mb-3 border-b border-border-light">
+                    {g.name}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {g.employees.map((name, i) => (
+                      <Badge key={i} variant="primary">{name}</Badge>
+                    ))}
+                  </div>
+                </Card>
+              ))}
           </div>
 
-          {freeEmployee && freeEmployee.employeeNames.length > 0 && (
+          {duty.freeEmployee && duty.freeEmployee.employeeNames.length > 0 && (
             <Card className="p-5 border-dashed">
               <div className="text-sm font-semibold text-text-secondary pb-3 mb-3 border-b border-border-light">
                 프리 (미배정)
               </div>
               <div className="flex flex-wrap gap-1.5">
-                {freeEmployee.employeeNames.map((name, i) => (
+                {duty.freeEmployee.employeeNames.map((name, i) => (
                   <Badge key={i} variant="neutral">{name}</Badge>
                 ))}
               </div>
@@ -117,7 +165,7 @@ export default function DutiesPage() {
             배정일시: {new Date(duty.createdAt).toLocaleString("ko-KR")}
           </p>
         </>
-      ) : (
+      ) : !hasGame ? (
         <Card>
           <EmptyState
             icon={LayoutGrid}
@@ -125,11 +173,13 @@ export default function DutiesPage() {
             description="상단의 뽑기 버튼을 눌러 배정을 시작하세요."
           />
         </Card>
-      )}
+      ) : null}
 
-      {showFlipModal && duty && (
+      {showFlipModal && hasGame && (
         <CardFlipModal
-          duty={duty}
+          cards={duty.cards}
+          allFlipped={duty.allFlipped}
+          onCardClick={(cardIndex) => flipMutation.mutate(cardIndex)}
           onClose={() => setShowFlipModal(false)}
         />
       )}
