@@ -26,6 +26,8 @@ async function fireConfetti() {
   }, 200);
 }
 
+const SHELL_WIDTH = "w-full max-w-5xl px-6";
+
 interface CardFlipModalProps {
   cards: MaskedCard[];
   allFlipped: boolean;
@@ -69,7 +71,7 @@ export default function CardFlipModal({
     >
       <div className="absolute inset-0 bg-gradient-to-br from-primary-800/90 via-primary-700/85 to-primary-900/90 backdrop-blur-sm" />
 
-      <div className="relative z-10 w-full max-w-3xl px-6 pt-6 pb-4 flex items-center justify-between">
+      <div className={`relative z-10 ${SHELL_WIDTH} pt-6 pb-4 flex items-center justify-between`}>
         <div className="flex items-center gap-3">
           <PartyPopper className="text-white/80" size={22} />
           <h2 className="text-lg font-bold text-white">청소 배정 결과</h2>
@@ -86,44 +88,44 @@ export default function CardFlipModal({
         </button>
       </div>
 
-      <div className="relative z-10 flex-1 w-full max-w-3xl px-6 pb-4 overflow-y-auto">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+      <div className={`relative z-10 flex-1 ${SHELL_WIDTH} pb-4 overflow-y-auto`}>
+        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
           {cards.map((card, index) => (
             <div
               key={card.cardIndex}
               data-testid={`flip-card-${card.cardIndex}`}
-              className="flip-card aspect-[3/4] cursor-pointer"
-              onClick={() => !card.isFlipped && onCardClick(card.cardIndex)}
+              className={`flip-card aspect-[3/4] ${card.isFlipped ? "cursor-default" : "cursor-pointer transition-transform duration-100 active:scale-95"}`}
+              onClick={card.isFlipped ? undefined : () => onCardClick(card.cardIndex)}
               style={{
                 animation: `card-enter 0.4s var(--ease-out-expo) ${index * 0.06}s both`,
               }}
             >
               <div className={`flip-card-inner ${card.isFlipped ? "flipped" : ""}`}>
-                <div className="flip-card-front bg-surface border border-white/20 shadow-card-hover flex flex-col items-center justify-center gap-3 p-4">
-                  <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
-                    <CircleHelp size={22} className="text-primary-500" />
+                <div className="flip-card-front bg-surface border border-white/20 shadow-card-hover flex flex-col items-center justify-center gap-2 p-3">
+                  <div className="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center">
+                    <CircleHelp size={20} className="text-primary-500" />
                   </div>
-                  <span className="text-sm font-semibold text-text-primary text-center leading-tight">
+                  <span className="text-xs sm:text-sm font-semibold text-text-primary text-center leading-tight">
                     {card.employeeName}
                   </span>
-                  <span className="text-[11px] text-text-tertiary">터치하여 공개</span>
+                  <span className="text-[10px] text-text-tertiary">터치하여 공개</span>
                 </div>
 
                 <div
-                  className={`flip-card-back flex flex-col items-center justify-center gap-3 p-4 border ${
+                  className={`flip-card-back flex flex-col items-center justify-center gap-2 p-3 border-2 ${
                     card.isFree
                       ? "bg-surface-tertiary border-border"
-                      : "bg-surface border-primary-200"
+                      : "bg-primary-100 border-primary-400 shadow-card-hover"
                   }`}
                 >
-                  <span className="text-sm font-semibold text-text-primary text-center">
+                  <span className="text-xs sm:text-sm font-semibold text-text-primary text-center leading-tight">
                     {card.employeeName}
                   </span>
                   {card.dutyItemName !== null && (
                     <span data-testid={`flip-card-${card.cardIndex}-item`}>
                       <Badge
                         variant={card.isFree ? "neutral" : "primary"}
-                        className="text-sm"
+                        className="text-xs sm:text-sm"
                       >
                         {card.dutyItemName}
                       </Badge>
@@ -136,7 +138,7 @@ export default function CardFlipModal({
         </div>
       </div>
 
-      <div className="relative z-10 w-full max-w-3xl px-6 py-4 flex justify-center gap-3">
+      <div className={`relative z-10 ${SHELL_WIDTH} py-4 flex justify-center gap-3`}>
         {allFlipped && (
           <Button variant="gradient-primary" size="lg" onClick={onClose}>
             확인
