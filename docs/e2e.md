@@ -92,4 +92,6 @@ CI에서는 `process.env.CI`가 truthy라 `reuseExistingServer: false`로 동작
 ## 알려진 주의
 
 - **TanStack Query staleTime 30s**: mutation 후 expect는 폴링이라 대부분 자연 해결. flaky가 보이면 `await page.waitForResponse(/\/api\//)`로 명시 동기화.
+- **`placeholderData: keepPreviousData`**: 사무실 전환 직후 이전 office 데이터가 잠깐 유지됨 (stale-while-revalidate). 사무실 전환을 끼는 시나리오는 단언 전에 새 office 데이터를 명시 대기 (`expect.poll` 또는 `waitForResponse`).
+- **`useDelayedPending` 250ms 지연 스켈레톤**: 첫 진입 후 250ms 동안 본문이 빈 영역 → 0~250ms 사이에 본문 단언을 걸면 잠깐 비어 보일 수 있음. PageHeader는 즉시 렌더되므로 PageHeader 기준 단언 또는 `expect.poll`로 본문 도착 대기.
 - **분리수거 시나리오 미포함**: UI 노출 제거 대상이라 spec 작성 금지.

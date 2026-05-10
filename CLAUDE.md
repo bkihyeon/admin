@@ -90,6 +90,13 @@ pnpm test:e2e:report          # 직전 실행 HTML report
 ### UI 컴포넌트 시스템
 `src/components/ui/` 아래 공유 컴포넌트: Button(7 variants, 3 sizes), Card, Badge, Input, Alert, EmptyState, PageHeader, Sidebar. 디자인 토큰 기반 시맨틱 색상 사용 (`primary-*`, `success-*`, `warning-*`, `danger-*`, `surface`, `text-*`).
 
+### 페이지 로딩 / 진입 애니메이션 패턴
+모든 페이지가 따르는 cross-cutting 패턴 — 새 페이지 추가 시 그대로 따를 것.
+- **BlurFade staggered 진입** (`src/components/ui/blur-fade.tsx`, motion 라이브러리): 섹션 단위 `delay={0|0.1|0.2|0.3}` stagger. 디폴트 `duration=0.5s, offset=8, direction="up"`. `useInView({once:true})`로 한 번만 트리거.
+- **로딩 깜빡임 제거 3-way 분기**: `useQuery`에서 `data, isPending` 직접 받음(`= []` 디폴트 destructure 금지 — 빈 결과와 미fetched 구별 불가). `useDelayedPending(isPending)` (`src/lib/hooks/useDelayedPending.ts`, 250ms 임계)으로 짧은 로딩(<250ms)엔 아무것도 안 보임 → 깜빡임 0. PageHeader는 즉시 렌더, 본문만 `showSkeleton ? <XxxSkeleton/> : isPending ? null : <콘텐츠>` 분기.
+- **`placeholderData: keepPreviousData`**: 사무실 전환 시 queryKey 바뀌어도 이전 office 데이터를 stale-while-revalidate로 유지 → blank 윈도우 제거. 6 페이지 모두 적용.
+- **스켈레톤** (`src/components/skeletons/*Skeleton.tsx`): 본문만 그림(PageHeader 모사 금지 — 페이지에서 즉시 렌더하므로 중복). 그리드/높이는 본문 첫 섹션과 동일하게 → CLS 최소화.
+
 ### Path alias
 `@/*` → `./src/*` (tsconfig paths)
 
