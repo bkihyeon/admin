@@ -1,7 +1,7 @@
 import { neon } from "@neondatabase/serverless";
-import { createOffice } from "@/lib/db/repositories/offices";
-import { createEmployee } from "@/lib/db/repositories/employees";
 import { createDutyItem } from "@/lib/db/repositories/duty-items";
+import { createEmployee } from "@/lib/db/repositories/employees";
+import { createOffice } from "@/lib/db/repositories/offices";
 import type { Office } from "@/lib/types";
 
 // =====================================================
@@ -14,7 +14,7 @@ const url = process.env.DATABASE_URL;
 if (!url) {
   throw new Error(
     `[E2E SAFETY] DATABASE_URL is not set. ` +
-      `Set DATABASE_URL_TEST in .env.test (see .env.test.example).`,
+      `Set DATABASE_URL_TEST in .env.test (see .env.test.example).`
   );
 }
 // Neon endpoint hostname은 branch 이름과 별개라 connection string에 'test'가
@@ -29,7 +29,7 @@ if (!url.includes("test") && !confirmed) {
       `and E2E_DB_CONFIRMED is not set. ` +
       `Either use a test branch URL or add E2E_DB_CONFIRMED=1 to .env.test ` +
       `to explicitly confirm this is a non-prod DB. ` +
-      `(URL host/credentials intentionally not echoed.)`,
+      `(URL host/credentials intentionally not echoed.)`
   );
 }
 
@@ -50,7 +50,7 @@ export async function seedOffice(name: string) {
 
 export async function seedEmployees(
   officeId: string,
-  names: string[],
+  names: string[]
 ): Promise<void> {
   for (const name of names) {
     await createEmployee({ name, officeId });
@@ -59,7 +59,7 @@ export async function seedEmployees(
 
 export async function seedDutyItems(
   officeId: string,
-  items: { name: string; requiredCount: number }[],
+  items: { name: string; requiredCount: number }[]
 ): Promise<void> {
   for (const item of items) {
     await createDutyItem({
@@ -76,7 +76,7 @@ export async function seedDutyItems(
  */
 export async function corruptRevealState(
   month: string,
-  officeId: string,
+  officeId: string
 ): Promise<void> {
   await sql`
     UPDATE duties

@@ -12,7 +12,7 @@ export function maskDuty(duty: CleaningDuty): MaskedDutyResponse {
       cardsLen: cards.length,
     });
     throw new Error(
-      `revealState length mismatch (dutyId=${duty.id}, expected=${cards.length}, got=${duty.revealState.length})`,
+      `revealState length mismatch (dutyId=${duty.id}, expected=${cards.length}, got=${duty.revealState.length})`
     );
   }
   const allFlipped =

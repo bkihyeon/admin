@@ -1,20 +1,20 @@
 "use client";
 
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Clock, Dices, LayoutGrid, Loader2 } from "lucide-react";
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useOffice } from "@/contexts/OfficeContext";
-import type { MaskedDutyResponse } from "@/lib/types";
-import { queryKeys } from "@/lib/query-keys";
-import Card from "@/components/ui/Card";
-import Badge from "@/components/ui/Badge";
-import PageHeader from "@/components/ui/PageHeader";
-import EmptyState from "@/components/ui/EmptyState";
-import Button from "@/components/ui/Button";
-import Alert from "@/components/ui/Alert";
-import DutiesSkeleton from "@/components/skeletons/DutiesSkeleton";
-import { Dices, Loader2, Clock, LayoutGrid } from "lucide-react";
 import CardFlipModal from "@/components/CardFlipModal";
+import DutiesSkeleton from "@/components/skeletons/DutiesSkeleton";
+import Alert from "@/components/ui/Alert";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
+import EmptyState from "@/components/ui/EmptyState";
+import PageHeader from "@/components/ui/PageHeader";
+import { useOffice } from "@/contexts/OfficeContext";
 import { groupCardsByItem } from "@/lib/duties/cards";
+import { queryKeys } from "@/lib/query-keys";
+import type { MaskedDutyResponse } from "@/lib/types";
 
 export default function DutiesPage() {
   const { selectedOfficeId, selectedOffice } = useOffice();
@@ -27,7 +27,9 @@ export default function DutiesPage() {
   const { data: duty = null, isLoading } = useQuery<MaskedDutyResponse | null>({
     queryKey: queryKeys.duties(selectedOfficeId, currentMonth),
     queryFn: async () => {
-      const res = await fetch(`/api/duties?month=${currentMonth}&officeId=${selectedOfficeId}`);
+      const res = await fetch(
+        `/api/duties?month=${currentMonth}&officeId=${selectedOfficeId}`
+      );
       const data: MaskedDutyResponse | null = await res.json();
       return data;
     },
@@ -47,14 +49,20 @@ export default function DutiesPage() {
       const res = await fetch("/api/duties", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ month: currentMonth, officeId: selectedOfficeId }),
+        body: JSON.stringify({
+          month: currentMonth,
+          officeId: selectedOfficeId,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       return data as { duty: MaskedDutyResponse; warning: string | null };
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(queryKeys.duties(selectedOfficeId, currentMonth), data.duty);
+      queryClient.setQueryData(
+        queryKeys.duties(selectedOfficeId, currentMonth),
+        data.duty
+      );
       queryClient.invalidateQueries({
         queryKey: queryKeys.duties(selectedOfficeId),
         refetchType: "none",
@@ -72,14 +80,21 @@ export default function DutiesPage() {
       const res = await fetch("/api/duties/flip", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ month: currentMonth, officeId: selectedOfficeId, cardIndex }),
+        body: JSON.stringify({
+          month: currentMonth,
+          officeId: selectedOfficeId,
+          cardIndex,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "flip failed");
       return data as MaskedDutyResponse;
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(queryKeys.duties(selectedOfficeId, currentMonth), data);
+      queryClient.setQueryData(
+        queryKeys.duties(selectedOfficeId, currentMonth),
+        data
+      );
     },
   });
 
@@ -87,7 +102,12 @@ export default function DutiesPage() {
     if (!selectedOfficeId) return;
     // inProgress 상태는 메인 버튼이 disabled라 도달 불가. 완료된 게임 재뽑기 케이스만 confirm.
     if (duty && duty.cards.length > 0 && duty.allFlipped) {
-      if (!confirm(`${selectedOffice?.name} 배정이 이미 있습니다. 새로 뽑으시겠습니까?`)) return;
+      if (
+        !confirm(
+          `${selectedOffice?.name} 배정이 이미 있습니다. 새로 뽑으시겠습니까?`
+        )
+      )
+        return;
     }
     drawMutation.mutate();
   };
@@ -96,7 +116,7 @@ export default function DutiesPage() {
     if (!selectedOfficeId) return;
     if (
       !confirm(
-        "진행 중인 게임을 취소하고 새로 뽑으시겠습니까? 현재 공개된 카드는 모두 사라집니다.",
+        "진행 중인 게임을 취소하고 새로 뽑으시겠습니까? 현재 공개된 카드는 모두 사라집니다."
       )
     )
       return;
@@ -122,7 +142,11 @@ export default function DutiesPage() {
           disabled={drawMutation.isPending || !selectedOfficeId || inProgress}
           data-testid="main-draw-btn"
         >
-          {drawMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <Dices size={18} />}
+          {drawMutation.isPending ? (
+            <Loader2 size={18} className="animate-spin" />
+          ) : (
+            <Dices size={18} />
+          )}
           {drawMutation.isPending ? "배정 중..." : "뽑기"}
         </Button>
       </PageHeader>
@@ -137,7 +161,8 @@ export default function DutiesPage() {
                 진행 중인 게임이 있습니다
               </div>
               <div className="text-xs text-text-tertiary mt-1">
-                {duty.cards.filter((c) => c.isFlipped).length}/{duty.cards.length} 카드 공개됨
+                {duty.cards.filter((c) => c.isFlipped).length}/
+                {duty.cards.length} 카드 공개됨
               </div>
             </div>
             <div className="flex gap-2">
@@ -150,7 +175,11 @@ export default function DutiesPage() {
               >
                 새로 뽑기
               </Button>
-              <Button variant="primary" size="md" onClick={() => setShowFlipModal(true)}>
+              <Button
+                variant="primary"
+                size="md"
+                onClick={() => setShowFlipModal(true)}
+              >
                 참가하기
               </Button>
             </div>
@@ -169,8 +198,10 @@ export default function DutiesPage() {
                     {g.name}
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {g.employees.map((name, i) => (
-                      <Badge key={i} variant="primary">{name}</Badge>
+                    {g.employees.map((name) => (
+                      <Badge key={name} variant="primary">
+                        {name}
+                      </Badge>
                     ))}
                   </div>
                 </Card>
@@ -183,8 +214,10 @@ export default function DutiesPage() {
                 프리 (미배정)
               </div>
               <div className="flex flex-wrap gap-1.5">
-                {duty.freeEmployee.employeeNames.map((name, i) => (
-                  <Badge key={i} variant="neutral">{name}</Badge>
+                {duty.freeEmployee.employeeNames.map((name) => (
+                  <Badge key={name} variant="neutral">
+                    {name}
+                  </Badge>
                 ))}
               </div>
             </Card>

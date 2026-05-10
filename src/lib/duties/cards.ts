@@ -9,7 +9,7 @@ export interface EmployeeCard {
 
 // 서버/클라이언트 공유 평탄화 규칙. revealState.length === buildCards(duty).length 불변.
 export function buildCards(
-  duty: Pick<CleaningDuty, "assignments" | "freeEmployee">,
+  duty: Pick<CleaningDuty, "assignments" | "freeEmployee">
 ): EmployeeCard[] {
   const out: EmployeeCard[] = [];
   let i = 0;
@@ -49,10 +49,16 @@ export function groupCardsByItem(cards: MaskedCard[]): AssignmentGroup[] {
   const m = new Map<string, AssignmentGroup>();
   for (const c of cards) {
     const key = c.isFree ? "__free__" : (c.dutyItemName ?? "");
-    if (!m.has(key)) {
-      m.set(key, { name: c.dutyItemName ?? "", isFree: c.isFree, employees: [] });
+    let group = m.get(key);
+    if (!group) {
+      group = {
+        name: c.dutyItemName ?? "",
+        isFree: c.isFree,
+        employees: [],
+      };
+      m.set(key, group);
     }
-    m.get(key)!.employees.push(c.employeeName);
+    group.employees.push(c.employeeName);
   }
   return Array.from(m.values());
 }

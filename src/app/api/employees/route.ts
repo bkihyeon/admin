@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { listEmployees, listEmployeesByOffice, createEmployee } from "@/lib/db/repositories/employees";
+import {
+  createEmployee,
+  listEmployees,
+  listEmployeesByOffice,
+} from "@/lib/db/repositories/employees";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);

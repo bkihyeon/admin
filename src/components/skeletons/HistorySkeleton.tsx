@@ -1,5 +1,5 @@
-import Skeleton from "@/components/ui/Skeleton";
 import Card from "@/components/ui/Card";
+import Skeleton from "@/components/ui/Skeleton";
 
 export default function HistorySkeleton() {
   return (
@@ -19,7 +19,10 @@ export default function HistorySkeleton() {
         <Skeleton height={20} width={160} className="mb-4" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[0, 1, 2, 3, 4].map((i) => (
-            <div key={i} className="rounded-lg border border-border-light p-4 space-y-2">
+            <div
+              key={i}
+              className="rounded-lg border border-border-light p-4 space-y-2"
+            >
               <Skeleton height={16} width={80} />
               <div className="flex gap-1.5">
                 <Skeleton height={20} width={48} className="rounded-full" />

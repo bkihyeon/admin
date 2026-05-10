@@ -1,14 +1,16 @@
 import { eq } from "drizzle-orm";
-import { db } from "../client";
-import { dutyItems } from "../schema";
-import { generateId } from "../id";
 import type { DutyItem } from "@/lib/types";
+import { db } from "../client";
+import { generateId } from "../id";
+import { dutyItems } from "../schema";
 
 export async function listDutyItems(): Promise<DutyItem[]> {
   return db.select().from(dutyItems);
 }
 
-export async function listDutyItemsByOffice(officeId: string): Promise<DutyItem[]> {
+export async function listDutyItemsByOffice(
+  officeId: string
+): Promise<DutyItem[]> {
   return db.select().from(dutyItems).where(eq(dutyItems.officeId, officeId));
 }
 

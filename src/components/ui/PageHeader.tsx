@@ -4,7 +4,11 @@ interface PageHeaderProps {
   children?: React.ReactNode;
 }
 
-export default function PageHeader({ title, badge, children }: PageHeaderProps) {
+export default function PageHeader({
+  title,
+  badge,
+  children,
+}: PageHeaderProps) {
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-3">

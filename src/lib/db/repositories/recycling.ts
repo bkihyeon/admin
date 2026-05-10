@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
+import type { RecyclingState, RecyclingWeek } from "@/lib/types";
 import { db } from "../client";
 import { recyclingState } from "../schema";
-import type { RecyclingState, RecyclingWeek } from "@/lib/types";
 
 const SINGLETON_ID = 1;
 

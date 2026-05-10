@@ -1,6 +1,13 @@
-import { ButtonHTMLAttributes } from "react";
+import type { ButtonHTMLAttributes } from "react";
 
-type Variant = "primary" | "success" | "warning" | "danger" | "ghost" | "gradient-primary" | "gradient-success";
+type Variant =
+  | "primary"
+  | "success"
+  | "warning"
+  | "danger"
+  | "ghost"
+  | "gradient-primary"
+  | "gradient-success";
 type Size = "sm" | "md" | "lg";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {

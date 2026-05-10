@@ -4,7 +4,11 @@ interface CardProps {
   hover?: boolean;
 }
 
-export default function Card({ children, className = "", hover = false }: CardProps) {
+export default function Card({
+  children,
+  className = "",
+  hover = false,
+}: CardProps) {
   return (
     <div
       className={`bg-surface rounded-xl border border-border shadow-card ${

@@ -48,9 +48,7 @@
         "duties_month_unique": {
           "name": "duties_month_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "month"
-          ]
+          "columns": ["month"]
         }
       },
       "policies": {},
@@ -92,12 +90,8 @@
           "name": "duty_items_office_id_offices_id_fk",
           "tableFrom": "duty_items",
           "tableTo": "offices",
-          "columnsFrom": [
-            "office_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["office_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -144,12 +138,8 @@
           "name": "employees_office_id_offices_id_fk",
           "tableFrom": "employees",
           "tableTo": "offices",
-          "columnsFrom": [
-            "office_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["office_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }

@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
-import { db } from "../client";
-import { employees } from "../schema";
-import { generateId } from "../id";
 import type { Employee } from "@/lib/types";
+import { db } from "../client";
+import { generateId } from "../id";
+import { employees } from "../schema";
 
 function toEmployee(row: typeof employees.$inferSelect): Employee {
   return {
@@ -18,7 +18,9 @@ export async function listEmployees(): Promise<Employee[]> {
   return rows.map(toEmployee);
 }
 
-export async function listEmployeesByOffice(officeId: string): Promise<Employee[]> {
+export async function listEmployeesByOffice(
+  officeId: string
+): Promise<Employee[]> {
   const rows = await db
     .select()
     .from(employees)
@@ -33,7 +35,11 @@ export async function createEmployee(input: {
 }): Promise<Employee> {
   const [row] = await db
     .insert(employees)
-    .values({ id: generateId(), name: input.name, officeId: input.officeId ?? null })
+    .values({
+      id: generateId(),
+      name: input.name,
+      officeId: input.officeId ?? null,
+    })
     .returning();
   return toEmployee(row);
 }

@@ -1,5 +1,5 @@
-import Skeleton from "@/components/ui/Skeleton";
 import Card from "@/components/ui/Card";
+import Skeleton from "@/components/ui/Skeleton";
 
 export default function EmployeesSkeleton() {
   return (
@@ -27,7 +27,10 @@ export default function EmployeesSkeleton() {
             <Skeleton height={12} width={60} />
           </div>
           {[0, 1, 2, 3, 4].map((i) => (
-            <div key={i} className="flex items-center gap-4 py-4 px-5 border-b border-border-light last:border-0">
+            <div
+              key={i}
+              className="flex items-center gap-4 py-4 px-5 border-b border-border-light last:border-0"
+            >
               <Skeleton height={14} width={24} />
               <Skeleton height={16} width={80} />
               <Skeleton height={14} width={60} className="ml-auto" />

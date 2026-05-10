@@ -1,5 +1,5 @@
-import Skeleton from "@/components/ui/Skeleton";
 import Card from "@/components/ui/Card";
+import Skeleton from "@/components/ui/Skeleton";
 
 export default function DutiesSkeleton() {
   return (

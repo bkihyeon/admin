@@ -12,7 +12,11 @@ const variantClasses: Record<BadgeVariant, string> = {
   neutral: "bg-surface-tertiary text-text-secondary border-border-light",
 };
 
-export default function Badge({ children, variant = "primary", className = "" }: BadgeProps) {
+export default function Badge({
+  children,
+  variant = "primary",
+  className = "",
+}: BadgeProps) {
   return (
     <span
       className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border ${variantClasses[variant]} ${className}`}

@@ -20,7 +20,9 @@ import { readFileSync } from "node:fs";
 
 const [, , prePath, postPath] = process.argv;
 if (!prePath || !postPath) {
-  console.error("usage: node scripts/duties-compare.mjs <pre.json> <post.json>");
+  console.error(
+    "usage: node scripts/duties-compare.mjs <pre.json> <post.json>"
+  );
   process.exit(1);
 }
 
@@ -62,25 +64,32 @@ function diffMultiset(label, preRows, postRows, fields) {
 
   if (missingInPost.length || extraInPost.length) {
     fail(
-      `${label} multiset diff (missing ${missingInPost.length}, extra ${extraInPost.length})`,
+      `${label} multiset diff (missing ${missingInPost.length}, extra ${extraInPost.length})`
     );
     for (const x of missingInPost.slice(0, 10)) {
-      console.error(`  missing in post: ${x.key} (pre=${x.pre}, post=${x.post})`);
+      console.error(
+        `  missing in post: ${x.key} (pre=${x.pre}, post=${x.post})`
+      );
     }
     for (const x of extraInPost.slice(0, 10)) {
-      console.error(`  extra in post:   ${x.key} (pre=${x.pre}, post=${x.post})`);
+      console.error(
+        `  extra in post:   ${x.key} (pre=${x.pre}, post=${x.post})`
+      );
     }
   } else {
     console.log(`OK: ${label} (${preRows.length} tuples)`);
   }
 }
 
-diffMultiset(
-  "assignmentTuples",
-  pre.assignmentTuples,
-  post.assignmentTuples,
-  ["month", "office_id", "duty_item_id", "duty_item_name", "slot_index", "employee_id", "employee_name"],
-);
+diffMultiset("assignmentTuples", pre.assignmentTuples, post.assignmentTuples, [
+  "month",
+  "office_id",
+  "duty_item_id",
+  "duty_item_name",
+  "slot_index",
+  "employee_id",
+  "employee_name",
+]);
 
 // freeEmployees는 employee_names가 jsonb 배열이라 stringify 정렬 후 비교
 function normalizeFreeRows(rows) {
@@ -95,7 +104,7 @@ diffMultiset(
   "freeEmployeeTuples",
   normalizeFreeRows(pre.freeEmployeeTuples),
   normalizeFreeRows(post.freeEmployeeTuples),
-  ["month", "office_id", "employee_names"],
+  ["month", "office_id", "employee_names"]
 );
 
 const preMonths = pre.totals[0]?.month_count ?? 0;
@@ -106,12 +115,12 @@ if (preMonths !== postMonths) {
   console.log(`OK: month_count = ${preMonths}`);
 }
 
-diffMultiset(
-  "perOffice",
-  pre.perOffice,
-  post.perOffice,
-  ["month", "office_id", "office_name", "assignment_count"],
-);
+diffMultiset("perOffice", pre.perOffice, post.perOffice, [
+  "month",
+  "office_id",
+  "office_name",
+  "assignment_count",
+]);
 
 if (failed) {
   console.error("\nbaseline diff: FAIL");

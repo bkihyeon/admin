@@ -1,17 +1,17 @@
 "use client";
 
+import {
+  Building2,
+  ChevronDown,
+  ClipboardCheck,
+  Clock,
+  LayoutDashboard,
+  Settings,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useOffice } from "@/contexts/OfficeContext";
-import {
-  LayoutDashboard,
-  Users,
-  Settings,
-  ClipboardCheck,
-  Clock,
-  Building2,
-  ChevronDown,
-} from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/", label: "대시보드", icon: LayoutDashboard },
@@ -23,7 +23,8 @@ const NAV_ITEMS = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { offices, selectedOfficeId, setSelectedOfficeId, loading } = useOffice();
+  const { offices, selectedOfficeId, setSelectedOfficeId, loading } =
+    useOffice();
 
   return (
     <aside className="fixed left-0 top-0 w-60 h-screen bg-surface border-r border-border flex flex-col z-10">
@@ -31,7 +32,9 @@ export default function Sidebar() {
         <h1 className="text-lg font-bold text-text-primary tracking-tight">
           청소 담당 관리
         </h1>
-        <p className="text-xs text-text-tertiary mt-0.5">Cleaning Duty Manager</p>
+        <p className="text-xs text-text-tertiary mt-0.5">
+          Cleaning Duty Manager
+        </p>
       </div>
 
       {/* 사무실 선택기 */}
@@ -100,7 +103,11 @@ export default function Sidebar() {
           <Building2
             size={20}
             strokeWidth={1.5}
-            className={pathname === "/offices" ? "text-primary-500" : "text-text-tertiary"}
+            className={
+              pathname === "/offices"
+                ? "text-primary-500"
+                : "text-text-tertiary"
+            }
           />
           사무실 관리
         </Link>

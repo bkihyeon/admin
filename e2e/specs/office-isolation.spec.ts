@@ -1,8 +1,11 @@
-import { test, expect, completeFlipModal } from "../fixtures/test";
+import { completeFlipModal, expect, test } from "../fixtures/test";
 
-async function selectOffice(page: import("@playwright/test").Page, name: string) {
+async function selectOffice(
+  page: import("@playwright/test").Page,
+  name: string
+) {
   await expect(
-    page.locator("aside select").locator("option", { hasText: name }),
+    page.locator("aside select").locator("option", { hasText: name })
   ).toHaveCount(1);
   await page.locator("aside select").selectOption({ label: name });
 }

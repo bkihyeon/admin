@@ -1,4 +1,4 @@
-import { Employee, RecyclingWeek } from "./types";
+import type { Employee, RecyclingWeek } from "./types";
 
 export function generateRecyclingSchedule(
   employees: Employee[],

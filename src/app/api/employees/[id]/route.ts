@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { updateEmployee, deleteEmployee } from "@/lib/db/repositories/employees";
+import {
+  deleteEmployee,
+  updateEmployee,
+} from "@/lib/db/repositories/employees";
 
 export async function PUT(
   request: Request,
@@ -13,7 +16,10 @@ export async function PUT(
 
   const updated = await updateEmployee(id, { name: name.trim(), officeId });
   if (!updated) {
-    return NextResponse.json({ error: "사원을 찾을 수 없습니다" }, { status: 404 });
+    return NextResponse.json(
+      { error: "사원을 찾을 수 없습니다" },
+      { status: 404 }
+    );
   }
 
   return NextResponse.json(updated);
@@ -27,7 +33,10 @@ export async function DELETE(
   const removed = await deleteEmployee(id);
 
   if (!removed) {
-    return NextResponse.json({ error: "사원을 찾을 수 없습니다" }, { status: 404 });
+    return NextResponse.json(
+      { error: "사원을 찾을 수 없습니다" },
+      { status: 404 }
+    );
   }
 
   return NextResponse.json({ success: true });

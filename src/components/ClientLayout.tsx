@@ -1,10 +1,14 @@
 "use client";
 
-import { OfficeProvider } from "@/contexts/OfficeContext";
 import QueryProvider from "@/components/QueryProvider";
 import Sidebar from "@/components/ui/Sidebar";
+import { OfficeProvider } from "@/contexts/OfficeContext";
 
-export default function ClientLayout({ children }: { children: React.ReactNode }) {
+export default function ClientLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <QueryProvider>
       <OfficeProvider>

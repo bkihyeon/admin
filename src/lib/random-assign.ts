@@ -1,4 +1,9 @@
-import { Employee, DutyItem, DutyAssignment, OfficeFreeEmployees } from "./types";
+import type {
+  DutyAssignment,
+  DutyItem,
+  Employee,
+  OfficeFreeEmployees,
+} from "./types";
 
 function shuffle<T>(array: T[]): T[] {
   const arr = [...array];
@@ -46,7 +51,9 @@ function assignItemsFromPool(
     };
   });
 
-  const assignedIds = new Set(assignments.flatMap((a) => a.assignedEmployeeIds));
+  const assignedIds = new Set(
+    assignments.flatMap((a) => a.assignedEmployeeIds)
+  );
   const freeEmployeeNames = employees
     .filter((e) => !assignedIds.has(e.id))
     .map((e) => e.name);

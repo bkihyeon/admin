@@ -1,17 +1,17 @@
 "use client";
 
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useOffice } from "@/contexts/OfficeContext";
-import type { MaskedDutyResponse } from "@/lib/types";
-import { queryKeys } from "@/lib/query-keys";
-import Card from "@/components/ui/Card";
-import Badge from "@/components/ui/Badge";
-import PageHeader from "@/components/ui/PageHeader";
-import EmptyState from "@/components/ui/EmptyState";
-import HistorySkeleton from "@/components/skeletons/HistorySkeleton";
 import { Clock } from "lucide-react";
+import { useState } from "react";
+import HistorySkeleton from "@/components/skeletons/HistorySkeleton";
+import Badge from "@/components/ui/Badge";
+import Card from "@/components/ui/Card";
+import EmptyState from "@/components/ui/EmptyState";
+import PageHeader from "@/components/ui/PageHeader";
+import { useOffice } from "@/contexts/OfficeContext";
 import { groupCardsByItem } from "@/lib/duties/cards";
+import { queryKeys } from "@/lib/query-keys";
+import type { MaskedDutyResponse } from "@/lib/types";
 
 export default function HistoryPage() {
   const { selectedOfficeId } = useOffice();
@@ -29,8 +29,9 @@ export default function HistoryPage() {
   // 진행 중 게임은 history에 노출하지 않음.
   const duties = allDuties.filter((d) => d.allFlipped);
 
-  const pickedValid = pickedMonth && duties.some((d) => d.month === pickedMonth);
-  const selectedMonth = pickedValid ? pickedMonth : duties[0]?.month ?? "";
+  const pickedValid =
+    pickedMonth && duties.some((d) => d.month === pickedMonth);
+  const selectedMonth = pickedValid ? pickedMonth : (duties[0]?.month ?? "");
   const selectedDuty = duties.find((d) => d.month === selectedMonth);
   const months = duties.map((d) => d.month);
 
@@ -60,6 +61,7 @@ export default function HistoryPage() {
             {months.map((m) => (
               <button
                 key={m}
+                type="button"
                 onClick={() => setPickedMonth(m)}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                   selectedMonth === m
@@ -88,8 +90,10 @@ export default function HistoryPage() {
                       {g.name}
                     </div>
                     <div className="flex flex-wrap gap-1.5">
-                      {g.employees.map((name, i) => (
-                        <Badge key={i} variant="neutral">{name}</Badge>
+                      {g.employees.map((name) => (
+                        <Badge key={name} variant="neutral">
+                          {name}
+                        </Badge>
                       ))}
                     </div>
                   </div>
@@ -98,16 +102,21 @@ export default function HistoryPage() {
 
               {freeEmployeeNames.length > 0 && (
                 <div className="mt-3 flex items-center gap-2 flex-wrap">
-                  <span className="text-xs text-text-tertiary font-medium">프리:</span>
-                  {freeEmployeeNames.map((name, i) => (
-                    <Badge key={i} variant="neutral">{name}</Badge>
+                  <span className="text-xs text-text-tertiary font-medium">
+                    프리:
+                  </span>
+                  {freeEmployeeNames.map((name) => (
+                    <Badge key={name} variant="neutral">
+                      {name}
+                    </Badge>
                   ))}
                 </div>
               )}
 
               <p className="mt-4 text-xs text-text-tertiary flex items-center gap-1.5">
                 <Clock size={14} />
-                배정일시: {new Date(selectedDuty.createdAt).toLocaleString("ko-KR")}
+                배정일시:{" "}
+                {new Date(selectedDuty.createdAt).toLocaleString("ko-KR")}
               </p>
             </Card>
           )}

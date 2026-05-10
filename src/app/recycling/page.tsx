@@ -1,16 +1,16 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { RecyclingState } from "@/lib/types";
-import { queryKeys } from "@/lib/query-keys";
-import Card from "@/components/ui/Card";
-import Badge from "@/components/ui/Badge";
-import PageHeader from "@/components/ui/PageHeader";
-import EmptyState from "@/components/ui/EmptyState";
-import Button from "@/components/ui/Button";
-import Alert from "@/components/ui/Alert";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Clock, Info, Loader2, Recycle, RefreshCw } from "lucide-react";
 import RecyclingSkeleton from "@/components/skeletons/RecyclingSkeleton";
-import { RefreshCw, Loader2, Clock, Info, Recycle } from "lucide-react";
+import Alert from "@/components/ui/Alert";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
+import EmptyState from "@/components/ui/EmptyState";
+import PageHeader from "@/components/ui/PageHeader";
+import { queryKeys } from "@/lib/query-keys";
+import type { RecyclingState } from "@/lib/types";
 
 interface RecyclingResponse extends RecyclingState {
   totalEmployees: number;
@@ -48,7 +48,9 @@ export default function RecyclingPage() {
   const handleGenerate = () => {
     if (
       state?.schedule.length &&
-      !confirm("새로운 4주 로테이션을 생성하시겠습니까? 현재 스케줄이 교체됩니다.")
+      !confirm(
+        "새로운 4주 로테이션을 생성하시겠습니까? 현재 스케줄이 교체됩니다."
+      )
     )
       return;
     generateMutation.mutate();
@@ -59,8 +61,17 @@ export default function RecyclingPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="분리수거 관리">
-        <Button variant="gradient-success" size="lg" onClick={handleGenerate} disabled={generateMutation.isPending}>
-          {generateMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={18} />}
+        <Button
+          variant="gradient-success"
+          size="lg"
+          onClick={handleGenerate}
+          disabled={generateMutation.isPending}
+        >
+          {generateMutation.isPending ? (
+            <Loader2 size={18} className="animate-spin" />
+          ) : (
+            <RefreshCw size={18} />
+          )}
           {generateMutation.isPending ? "생성 중..." : "다음 로테이션 생성"}
         </Button>
       </PageHeader>
@@ -80,8 +91,10 @@ export default function RecyclingPage() {
                   </span>
                 </div>
                 <div className="p-4 flex flex-wrap gap-1.5">
-                  {week.assignedEmployeeNames.map((name, i) => (
-                    <Badge key={i} variant="success">{name}</Badge>
+                  {week.assignedEmployeeNames.map((name) => (
+                    <Badge key={name} variant="success">
+                      {name}
+                    </Badge>
                   ))}
                 </div>
               </Card>
@@ -107,12 +120,18 @@ export default function RecyclingPage() {
 
       <Card className="p-5">
         <div className="flex items-start gap-3">
-          <Info size={18} strokeWidth={1.5} className="text-primary-400 mt-0.5" />
+          <Info
+            size={18}
+            strokeWidth={1.5}
+            className="text-primary-400 mt-0.5"
+          />
           <div>
-            <p className="text-sm font-medium text-text-primary">로테이션 규칙</p>
+            <p className="text-sm font-medium text-text-primary">
+              로테이션 규칙
+            </p>
             <p className="text-sm text-text-secondary mt-0.5">
-              사원 등록 순서대로 4명씩 4주간 담당합니다.
-              모든 사원이 한 바퀴 돌면 다시 처음부터 순환합니다.
+              사원 등록 순서대로 4명씩 4주간 담당합니다. 모든 사원이 한 바퀴
+              돌면 다시 처음부터 순환합니다.
             </p>
           </div>
         </div>

@@ -1,5 +1,13 @@
-import { pgTable, text, integer, timestamp, jsonb, unique, index } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+import {
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  unique,
+} from "drizzle-orm/pg-core";
 import type {
   DutyAssignment,
   OfficeFreeEmployees,
@@ -57,7 +65,7 @@ export const duties = pgTable(
       .nullsNotDistinct(),
     index("duties_month_idx").on(t.month),
     index("duties_office_idx").on(t.officeId),
-  ],
+  ]
 );
 
 export const recyclingState = pgTable("recycling_state", {

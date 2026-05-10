@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  listOffices,
-  createOffice,
-} from "@/lib/db/repositories/offices";
+import { createOffice, listOffices } from "@/lib/db/repositories/offices";
 
 export async function GET() {
   const offices = await listOffices();

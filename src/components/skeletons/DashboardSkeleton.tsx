@@ -1,5 +1,5 @@
-import Skeleton from "@/components/ui/Skeleton";
 import Card from "@/components/ui/Card";
+import Skeleton from "@/components/ui/Skeleton";
 
 export default function DashboardSkeleton() {
   return (
@@ -34,7 +34,10 @@ export default function DashboardSkeleton() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="rounded-lg border border-primary-100 p-4 space-y-2">
+            <div
+              key={i}
+              className="rounded-lg border border-primary-100 p-4 space-y-2"
+            >
               <Skeleton height={16} width={80} />
               <div className="flex gap-1.5">
                 <Skeleton height={20} width={48} className="rounded-full" />

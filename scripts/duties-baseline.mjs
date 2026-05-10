@@ -2,9 +2,9 @@
 // 기준 멀티셋을 .omc/baselines/{env}.json에 저장. 미래 schema 변경 시 동치성 검증의
 // 비교 기준점으로 사용. duties-compare.mjs와 짝.
 
-import { neon } from "@neondatabase/serverless";
-import { writeFileSync, mkdirSync, readFileSync, existsSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { neon } from "@neondatabase/serverless";
 
 const env = process.argv[2];
 if (!env || !["test", "prod"].includes(env)) {
@@ -22,7 +22,10 @@ function loadEnvFile(path) {
     if (idx < 0) continue;
     const k = line.slice(0, idx).trim();
     let v = line.slice(idx + 1).trim();
-    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+    if (
+      (v.startsWith('"') && v.endsWith('"')) ||
+      (v.startsWith("'") && v.endsWith("'"))
+    ) {
       v = v.slice(1, -1);
     }
     out[k] = v;

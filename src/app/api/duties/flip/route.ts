@@ -6,7 +6,7 @@ import type { MaskedDutyResponse } from "@/lib/types";
 type FlipResponse = MaskedDutyResponse | { error: string };
 
 export async function POST(
-  request: Request,
+  request: Request
 ): Promise<NextResponse<FlipResponse>> {
   const body = await request.json().catch(() => null);
   if (

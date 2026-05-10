@@ -1,4 +1,9 @@
-import { test, expect, acceptDialog, closeFlipModalOnly } from "../fixtures/test";
+import {
+  acceptDialog,
+  closeFlipModalOnly,
+  expect,
+  test,
+} from "../fixtures/test";
 
 /**
  * 진행 중 게임 가드 (in-progress-draw-guard-plan).
@@ -19,7 +24,7 @@ async function setupOffice(db: {
   seedEmployees: (officeId: string, names: string[]) => Promise<void>;
   seedDutyItems: (
     officeId: string,
-    items: { name: string; requiredCount: number }[],
+    items: { name: string; requiredCount: number }[]
   ) => Promise<void>;
 }) {
   const office = await db.seedOffice("InProgressGuard");
@@ -28,11 +33,14 @@ async function setupOffice(db: {
   return office;
 }
 
-async function gotoDuties(page: import("@playwright/test").Page, officeId: string) {
+async function gotoDuties(
+  page: import("@playwright/test").Page,
+  officeId: string
+) {
   await page.goto("/");
   await page.evaluate(
     ([id]) => localStorage.setItem("selectedOfficeId", id),
-    [officeId],
+    [officeId]
   );
   await page.goto("/duties");
 }
@@ -47,7 +55,7 @@ test("AC-3, AC-4: 진행 중 게임 → 메인 뽑기 disabled + 새로 뽑기/�
   // 첫 뽑기 (UI 동선) → modal 자동 오픈
   await page.getByTestId("main-draw-btn").click();
   await expect(
-    page.getByRole("heading", { name: "청소 배정 결과" }),
+    page.getByRole("heading", { name: "청소 배정 결과" })
   ).toBeVisible();
 
   // 카드 1장만 flip하여 in-progress (allFlipped=false) 유지
@@ -84,7 +92,7 @@ test("AC-5: 새로 뽑기 + confirm 승낙 → 새 게임 시작 + 모든 카드
 
   // drawMutation onSuccess가 modal 자동 오픈
   await expect(
-    page.getByRole("heading", { name: "청소 배정 결과" }),
+    page.getByRole("heading", { name: "청소 배정 결과" })
   ).toBeVisible();
 
   // 모든 카드 unflipped (item badge 미노출)
@@ -119,7 +127,7 @@ test("AC-6: 새로 뽑기 + confirm 거부 → 기존 게임 유지", async ({
 
   // 기존 진행 상태 그대로 (modal 미오픈, 1/3 유지)
   await expect(
-    page.getByRole("heading", { name: "청소 배정 결과" }),
+    page.getByRole("heading", { name: "청소 배정 결과" })
   ).not.toBeVisible();
   await expect(page.getByText(/1\/3 카드 공개됨/)).toBeVisible();
 });
@@ -133,7 +141,7 @@ test("AC-9: 참가하기 → 진행 중 modal 재오픈", async ({ page, request
   await gotoDuties(page, office.id);
   await page.getByRole("button", { name: "참가하기" }).click();
   await expect(
-    page.getByRole("heading", { name: "청소 배정 결과" }),
+    page.getByRole("heading", { name: "청소 배정 결과" })
   ).toBeVisible();
 });
 
@@ -188,7 +196,7 @@ test("AC-7-bis: 탭 A modal-open + 탭 B 새로 뽑기 → 탭 A modal cards 교
   // 탭 A: 참가하기로 modal 오픈, card 0 flip
   await pageA.getByRole("button", { name: "참가하기" }).click();
   await expect(
-    pageA.getByRole("heading", { name: "청소 배정 결과" }),
+    pageA.getByRole("heading", { name: "청소 배정 결과" })
   ).toBeVisible();
   await pageA.getByTestId("flip-card-0").click();
   await expect(pageA.getByTestId("flip-card-0-item")).toBeVisible();

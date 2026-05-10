@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import {
-  updateDutyItem,
   deleteDutyItem,
+  updateDutyItem,
 } from "@/lib/db/repositories/duty-items";
 
 export async function PUT(
@@ -11,7 +11,10 @@ export async function PUT(
   const { id } = await params;
   const { name, requiredCount, officeId } = await request.json();
   if (!name?.trim()) {
-    return NextResponse.json({ error: "항목명을 입력해주세요" }, { status: 400 });
+    return NextResponse.json(
+      { error: "항목명을 입력해주세요" },
+      { status: 400 }
+    );
   }
 
   const updated = await updateDutyItem(id, {
@@ -21,7 +24,10 @@ export async function PUT(
   });
 
   if (!updated) {
-    return NextResponse.json({ error: "항목을 찾을 수 없습니다" }, { status: 404 });
+    return NextResponse.json(
+      { error: "항목을 찾을 수 없습니다" },
+      { status: 404 }
+    );
   }
 
   return NextResponse.json(updated);
@@ -35,7 +41,10 @@ export async function DELETE(
   const removed = await deleteDutyItem(id);
 
   if (!removed) {
-    return NextResponse.json({ error: "항목을 찾을 수 없습니다" }, { status: 404 });
+    return NextResponse.json(
+      { error: "항목을 찾을 수 없습니다" },
+      { status: 404 }
+    );
   }
 
   return NextResponse.json({ success: true });

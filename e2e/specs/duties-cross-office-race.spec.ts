@@ -1,4 +1,4 @@
-import { test, expect } from "../fixtures/test";
+import { expect, test } from "../fixtures/test";
 
 /**
  * cross-office isolation 회귀 spec — 두 사무실이 같은 월에 동시에 POST /api/duties를
@@ -53,11 +53,11 @@ test("두 사무실이 같은 월에 동시 뽑기를 해도 양쪽 결과가 �
 
     expect(
       resA.ok(),
-      `iter ${i}: office A POST 실패 (${resA.status()})`,
+      `iter ${i}: office A POST 실패 (${resA.status()})`
     ).toBeTruthy();
     expect(
       resB.ok(),
-      `iter ${i}: office B POST 실패 (${resB.status()})`,
+      `iter ${i}: office B POST 실패 (${resB.status()})`
     ).toBeTruthy();
 
     const dutyA = await (
@@ -69,11 +69,11 @@ test("두 사무실이 같은 월에 동시 뽑기를 해도 양쪽 결과가 �
 
     expect(
       dutyA?.cards?.length ?? 0,
-      `iter ${i}: A의 cards 누락 (race 발생)`,
+      `iter ${i}: A의 cards 누락 (race 발생)`
     ).toBeGreaterThan(0);
     expect(
       dutyB?.cards?.length ?? 0,
-      `iter ${i}: B의 cards 누락 (race 발생)`,
+      `iter ${i}: B의 cards 누락 (race 발생)`
     ).toBeGreaterThan(0);
   }
 });

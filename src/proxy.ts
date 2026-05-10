@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 // MAINTENANCE 환경변수가 "1"이면 모든 요청을 503으로 차단.
 // schema 마이그레이션의 swap-rename cutover 동안 트래픽 0을 강제하기 위한 토글.
@@ -28,7 +28,7 @@ export function proxy(request: NextRequest) {
         "content-type": "text/html; charset=utf-8",
         "retry-after": "60",
       },
-    },
+    }
   );
 }
 

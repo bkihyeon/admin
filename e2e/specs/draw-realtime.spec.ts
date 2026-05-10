@@ -1,4 +1,4 @@
-import { test, expect } from "../fixtures/test";
+import { expect, test } from "../fixtures/test";
 
 /**
  * 실시간 멀티유저 카드 뽑기 모드 (realtime-draw-consensus-plan v4) 검증.
@@ -21,7 +21,7 @@ async function setupOffice(db: {
   seedEmployees: (officeId: string, names: string[]) => Promise<void>;
   seedDutyItems: (
     officeId: string,
-    items: { name: string; requiredCount: number }[],
+    items: { name: string; requiredCount: number }[]
   ) => Promise<void>;
 }) {
   const office = await db.seedOffice("DrawTest");
@@ -41,22 +41,28 @@ test("AC-1, AC-3: 새 게임 GET 응답에서 dutyItemName 마스킹 + freeEmplo
   });
 
   const res = await request.get(
-    `/api/duties?month=${MONTH}&officeId=${office.id}`,
+    `/api/duties?month=${MONTH}&officeId=${office.id}`
   );
   expect(res.ok()).toBeTruthy();
   const data = await res.json();
 
   expect(data.cards.length).toBe(3); // 사원 3명 = 카드 3장 (2 배정 + 1 free)
-  expect(data.cards.every((c: { dutyItemName: string | null }) => c.dutyItemName === null)).toBe(
-    true,
-  );
-  expect(data.cards.every((c: { isFlipped: boolean }) => c.isFlipped === false)).toBe(true);
+  expect(
+    data.cards.every(
+      (c: { dutyItemName: string | null }) => c.dutyItemName === null
+    )
+  ).toBe(true);
+  expect(
+    data.cards.every((c: { isFlipped: boolean }) => c.isFlipped === false)
+  ).toBe(true);
   expect(data.allFlipped).toBe(false);
   expect(data.freeEmployee).toBeNull();
   // employeeName은 항상 노출
-  expect(data.cards.every((c: { employeeName: string }) => typeof c.employeeName === "string")).toBe(
-    true,
-  );
+  expect(
+    data.cards.every(
+      (c: { employeeName: string }) => typeof c.employeeName === "string"
+    )
+  ).toBe(true);
 });
 
 test("AC-13: invalid cardIndex (음수, 정수 아님, 범위 밖) → 404", async ({
@@ -147,10 +153,10 @@ test("AC-4: 모든 카드 flip → allFlipped=true, freeEmployee 노출", async 
     expect(r.ok()).toBeTruthy();
     lastResp = await r.json();
   }
-  expect(lastResp).not.toBeNull();
-  expect(lastResp!.allFlipped).toBe(true);
-  expect(lastResp!.freeEmployee).not.toBeNull();
-  expect(lastResp!.cards.every((c) => c.dutyItemName !== null)).toBe(true);
+  if (!lastResp) throw new Error("flip 응답이 캡처되지 않았습니다.");
+  expect(lastResp.allFlipped).toBe(true);
+  expect(lastResp.freeEmployee).not.toBeNull();
+  expect(lastResp.cards.every((c) => c.dutyItemName !== null)).toBe(true);
 });
 
 test("AC-7: 새 게임 POST → revealState 초기화", async ({ request, db }) => {
@@ -168,12 +174,21 @@ test("AC-7: 새 게임 POST → revealState 초기화", async ({ request, db }) 
   });
   expect(post2.ok()).toBeTruthy();
   const d = (await post2.json()).duty;
-  expect(d.cards.every((c: { isFlipped: boolean }) => c.isFlipped === false)).toBe(true);
-  expect(d.cards.every((c: { dutyItemName: string | null }) => c.dutyItemName === null)).toBe(true);
+  expect(
+    d.cards.every((c: { isFlipped: boolean }) => c.isFlipped === false)
+  ).toBe(true);
+  expect(
+    d.cards.every(
+      (c: { dutyItemName: string | null }) => c.dutyItemName === null
+    )
+  ).toBe(true);
   expect(d.allFlipped).toBe(false);
 });
 
-test("AC-15: revealState length mismatch → GET 500", async ({ request, db }) => {
+test("AC-15: revealState length mismatch → GET 500", async ({
+  request,
+  db,
+}) => {
   const office = await setupOffice(db);
   await request.post("/api/duties", {
     data: { month: MONTH, officeId: office.id },
@@ -182,7 +197,7 @@ test("AC-15: revealState length mismatch → GET 500", async ({ request, db }) =
   await db.corruptRevealState(MONTH, office.id);
 
   const res = await request.get(
-    `/api/duties?month=${MONTH}&officeId=${office.id}`,
+    `/api/duties?month=${MONTH}&officeId=${office.id}`
   );
   expect(res.status()).toBe(500);
 });
@@ -207,7 +222,7 @@ test("AC-2: 두 탭에서 한쪽 카드 flip → 다른 탭이 polling으로 동
     await p.goto("/");
     await p.evaluate(
       ([id]) => localStorage.setItem("selectedOfficeId", id),
-      [office.id],
+      [office.id]
     );
     await p.goto("/duties");
     // 카드 모달이 자동으로 열리지 않으므로 — 게임을 만든 뒤 진입한 상태.
@@ -219,9 +234,13 @@ test("AC-2: 두 탭에서 한쪽 카드 flip → 다른 탭이 polling으로 동
   // A에서 카드 0 클릭
   await pageA.getByTestId("flip-card-0").click();
   // A에서 즉시 reveal (mutation onSuccess)
-  await expect(pageA.getByTestId("flip-card-0-item")).toBeVisible({ timeout: 4000 });
+  await expect(pageA.getByTestId("flip-card-0-item")).toBeVisible({
+    timeout: 4000,
+  });
   // B는 polling으로 1.5s 이내(+ RTT) 동기화. CI 안전 margin으로 4s.
-  await expect(pageB.getByTestId("flip-card-0-item")).toBeVisible({ timeout: 4000 });
+  await expect(pageB.getByTestId("flip-card-0-item")).toBeVisible({
+    timeout: 4000,
+  });
 
   await ctxA.close();
   await ctxB.close();
@@ -246,7 +265,7 @@ test("AC-9: 전 카드 flip 후 polling 멈춤 (1.5s 동안 추가 GET 0건)", a
   await page.goto("/");
   await page.evaluate(
     ([id]) => localStorage.setItem("selectedOfficeId", id),
-    [office.id],
+    [office.id]
   );
 
   const dutyGetUrls: string[] = [];
@@ -282,13 +301,15 @@ test("AC-5: 진행 중 reload → flipped 카드만 dutyItemName 공개", async 
   await page.goto("/");
   await page.evaluate(
     ([id]) => localStorage.setItem("selectedOfficeId", id),
-    [office.id],
+    [office.id]
   );
   await page.goto("/duties");
   await page.getByRole("button", { name: /참가하기/ }).click();
 
   // card 1만 공개
-  await expect(page.getByTestId("flip-card-1-item")).toBeVisible({ timeout: 4000 });
+  await expect(page.getByTestId("flip-card-1-item")).toBeVisible({
+    timeout: 4000,
+  });
   // card 0과 2는 미공개 (item 노출 안 됨)
   await expect(page.getByTestId("flip-card-0-item")).toHaveCount(0);
   await expect(page.getByTestId("flip-card-2-item")).toHaveCount(0);

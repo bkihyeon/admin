@@ -1,14 +1,14 @@
 import { and, desc, eq, sql } from "drizzle-orm";
-import { db } from "../client";
-import { duties } from "../schema";
-import { generateId } from "../id";
+import { buildCards } from "@/lib/duties/cards";
 import type {
   CleaningDuty,
   DutyAssignment,
   OfficeFreeEmployees,
   RevealState,
 } from "@/lib/types";
-import { buildCards } from "@/lib/duties/cards";
+import { db } from "../client";
+import { generateId } from "../id";
+import { duties } from "../schema";
 
 function toDuty(row: typeof duties.$inferSelect): CleaningDuty {
   return {
@@ -24,7 +24,7 @@ function toDuty(row: typeof duties.$inferSelect): CleaningDuty {
 
 export async function getDutyByMonthAndOffice(
   month: string,
-  officeId: string,
+  officeId: string
 ): Promise<CleaningDuty | null> {
   const [row] = await db
     .select()
@@ -34,7 +34,7 @@ export async function getDutyByMonthAndOffice(
 }
 
 export async function listDutiesByOffice(
-  officeId: string,
+  officeId: string
 ): Promise<CleaningDuty[]> {
   const rows = await db
     .select()

@@ -1,15 +1,15 @@
 "use client";
 
-import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useOffice } from "@/contexts/OfficeContext";
-import { queryKeys } from "@/lib/query-keys";
-import Card from "@/components/ui/Card";
+import { Building2, Pencil, PlusCircle, Trash2 } from "lucide-react";
+import { useState } from "react";
 import Button from "@/components/ui/Button";
-import PageHeader from "@/components/ui/PageHeader";
+import Card from "@/components/ui/Card";
 import EmptyState from "@/components/ui/EmptyState";
 import Input from "@/components/ui/Input";
-import { Building2, PlusCircle, Pencil, Trash2 } from "lucide-react";
+import PageHeader from "@/components/ui/PageHeader";
+import { useOffice } from "@/contexts/OfficeContext";
+import { queryKeys } from "@/lib/query-keys";
 
 export default function OfficesPage() {
   const { offices } = useOffice();
@@ -70,7 +70,12 @@ export default function OfficesPage() {
   };
 
   const handleDelete = (id: string, officeName: string) => {
-    if (!confirm(`"${officeName}" 사무실을 삭제하시겠습니까?\n소속 사원/항목의 사무실이 해제됩니다.`)) return;
+    if (
+      !confirm(
+        `"${officeName}" 사무실을 삭제하시겠습니까?\n소속 사원/항목의 사무실이 해제됩니다.`
+      )
+    )
+      return;
     deleteMutation.mutate(id);
   };
 
@@ -88,7 +93,9 @@ export default function OfficesPage() {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && handleAdd()}
+            onKeyDown={(e) =>
+              e.key === "Enter" && !e.nativeEvent.isComposing && handleAdd()
+            }
             placeholder="사무실 이름 입력"
             className="flex-1"
           />
@@ -116,28 +123,53 @@ export default function OfficesPage() {
                     type="text"
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && handleUpdate(office.id)}
+                    onKeyDown={(e) =>
+                      e.key === "Enter" &&
+                      !e.nativeEvent.isComposing &&
+                      handleUpdate(office.id)
+                    }
                     autoFocus
                     className="flex-1 mr-3"
                   />
                 ) : (
                   <div className="flex items-center gap-3">
                     <Building2 size={16} className="text-primary-500" />
-                    <span className="text-sm font-medium text-text-primary">{office.name}</span>
+                    <span className="text-sm font-medium text-text-primary">
+                      {office.name}
+                    </span>
                   </div>
                 )}
                 <div className="flex items-center gap-2">
                   {editingId === office.id ? (
                     <>
-                      <Button size="sm" onClick={() => handleUpdate(office.id)}>저장</Button>
-                      <Button variant="ghost" size="sm" onClick={() => setEditingId(null)}>취소</Button>
+                      <Button size="sm" onClick={() => handleUpdate(office.id)}>
+                        저장
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setEditingId(null)}
+                      >
+                        취소
+                      </Button>
                     </>
                   ) : (
                     <>
-                      <Button variant="ghost" size="sm" onClick={() => { setEditingId(office.id); setEditName(office.name); }}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setEditingId(office.id);
+                          setEditName(office.name);
+                        }}
+                      >
                         <Pencil size={14} />
                       </Button>
-                      <Button variant="danger" size="sm" onClick={() => handleDelete(office.id, office.name)}>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => handleDelete(office.id, office.name)}
+                      >
                         <Trash2 size={14} />
                       </Button>
                     </>

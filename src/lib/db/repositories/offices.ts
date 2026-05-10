@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
-import { db } from "../client";
-import { offices } from "../schema";
-import { generateId } from "../id";
 import type { Office } from "@/lib/types";
+import { db } from "../client";
+import { generateId } from "../id";
+import { offices } from "../schema";
 
 function toOffice(row: typeof offices.$inferSelect): Office {
   return {

@@ -1,6 +1,10 @@
 import { defineConfig } from "@playwright/test";
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
+const testDatabaseUrl = process.env.DATABASE_URL_TEST;
+if (!testDatabaseUrl) {
+  throw new Error("DATABASE_URL_TEST 환경변수가 필요합니다 (.env.test).");
+}
 
 export default defineConfig({
   testDir: "./e2e/specs",
@@ -28,7 +32,7 @@ export default defineConfig({
       // CRITICAL: Next.js는 .env.local > .env.test 우선이라
       // .env.test 자동 로드에 의존하면 prod DB 파괴 위험.
       // 반드시 명시 주입.
-      DATABASE_URL: process.env.DATABASE_URL_TEST!,
+      DATABASE_URL: testDatabaseUrl,
     },
   },
 });

@@ -18,7 +18,9 @@ if (!url) {
   process.exit(1);
 }
 if (!url.includes("ep-royal-cloud")) {
-  console.error("safety: 이 스크립트는 test branch에서만 실행 가능 (ep-royal-cloud-* endpoint 강제)");
+  console.error(
+    "safety: 이 스크립트는 test branch에서만 실행 가능 (ep-royal-cloud-* endpoint 강제)"
+  );
   process.exit(1);
 }
 
@@ -41,8 +43,12 @@ await step("setup: drop if exists", async () => {
 });
 
 await step("setup: create tmp_a, tmp_b", async () => {
-  await sql.query(`CREATE TABLE swap_a (id text PRIMARY KEY, src text NOT NULL)`);
-  await sql.query(`CREATE TABLE swap_b (id text PRIMARY KEY, src text NOT NULL)`);
+  await sql.query(
+    `CREATE TABLE swap_a (id text PRIMARY KEY, src text NOT NULL)`
+  );
+  await sql.query(
+    `CREATE TABLE swap_b (id text PRIMARY KEY, src text NOT NULL)`
+  );
   await sql.query(`INSERT INTO swap_a VALUES ('1', 'A')`);
   await sql.query(`INSERT INTO swap_b VALUES ('1', 'B')`);
 });
@@ -70,8 +76,12 @@ await step("verify: rows swapped", async () => {
 // transaction batch (sql.transaction은 batch 형태 — neon HTTP 1.x)
 await step("setup: reset for tx test", async () => {
   await sql.query(`DROP TABLE IF EXISTS swap_a, swap_b, swap_tmp`);
-  await sql.query(`CREATE TABLE swap_a (id text PRIMARY KEY, src text NOT NULL)`);
-  await sql.query(`CREATE TABLE swap_b (id text PRIMARY KEY, src text NOT NULL)`);
+  await sql.query(
+    `CREATE TABLE swap_a (id text PRIMARY KEY, src text NOT NULL)`
+  );
+  await sql.query(
+    `CREATE TABLE swap_b (id text PRIMARY KEY, src text NOT NULL)`
+  );
   await sql.query(`INSERT INTO swap_a VALUES ('1', 'A')`);
   await sql.query(`INSERT INTO swap_b VALUES ('1', 'B')`);
 });
@@ -96,4 +106,6 @@ await step("cleanup", async () => {
   await sql.query(`DROP TABLE IF EXISTS swap_a, swap_b, swap_tmp`);
 });
 
-console.log("\nswap-rename probe: PASS — Neon HTTP 단일 statement + batch transaction 모두 atomic rename 지원");
+console.log(
+  "\nswap-rename probe: PASS — Neon HTTP 단일 statement + batch transaction 모두 atomic rename 지원"
+);

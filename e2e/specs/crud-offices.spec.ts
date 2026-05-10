@@ -1,8 +1,6 @@
-import { test, expect, acceptDialog } from "../fixtures/test";
+import { acceptDialog, expect, test } from "../fixtures/test";
 
-test("사무실 CRUD: 등록 → 사이드바 노출 → 삭제 → 사라짐", async ({
-  page,
-}) => {
+test("사무실 CRUD: 등록 → 사이드바 노출 → 삭제 → 사라짐", async ({ page }) => {
   await page.goto("/offices");
 
   // 등록 — '테스트오피스X'는 main 카드 + aside select option 양쪽에 나타나니 main scope로 좁힘
@@ -13,9 +11,7 @@ test("사무실 CRUD: 등록 → 사이드바 노출 → 삭제 → 사라짐", 
 
   // 사이드바 select에 option 추가됨
   await expect(
-    page
-      .locator("aside select")
-      .locator("option", { hasText: "테스트오피스X" }),
+    page.locator("aside select").locator("option", { hasText: "테스트오피스X" })
   ).toHaveCount(1);
 
   // 삭제 (confirm) — 행은 flex justify-between div, 그 안 마지막 버튼이 Trash2
@@ -28,8 +24,6 @@ test("사무실 CRUD: 등록 → 사이드바 노출 → 삭제 → 사라짐", 
   // 리스트와 사이드바 select에서 사라짐
   await expect(mainScope.getByText("테스트오피스X")).not.toBeVisible();
   await expect(
-    page
-      .locator("aside select")
-      .locator("option", { hasText: "테스트오피스X" }),
+    page.locator("aside select").locator("option", { hasText: "테스트오피스X" })
   ).toHaveCount(0);
 });

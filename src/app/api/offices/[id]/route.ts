@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  updateOffice,
-  deleteOffice,
-} from "@/lib/db/repositories/offices";
+import { deleteOffice, updateOffice } from "@/lib/db/repositories/offices";
 
 export async function PUT(
   request: Request,

@@ -1,14 +1,11 @@
 import { config } from "dotenv";
+
 config({ path: ".env.local" });
 
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
 import { neon } from "@neondatabase/serverless";
-import type {
-  Employee,
-  DutyItem,
-  RecyclingState,
-} from "../src/lib/types";
+import type { DutyItem, Employee, RecyclingState } from "../src/lib/types";
 
 /** 레거시 JSON 구조 (마이그레이션 이전 형식) */
 interface LegacyCleaningDuty {
@@ -19,7 +16,11 @@ interface LegacyCleaningDuty {
   createdAt: string;
 }
 
-const sql = neon(process.env.DATABASE_URL!);
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL이 없습니다. .env.local 확인 바람.");
+}
+const sql = neon(databaseUrl);
 
 function readJson<T>(filename: string): T {
   const filePath = path.join(process.cwd(), "data", filename);
@@ -84,13 +85,12 @@ async function migrateRecycling() {
       schedule = EXCLUDED.schedule,
       updated_at = EXCLUDED.updated_at
   `;
-  console.log(`✓ recycling_state: currentIndex=${state.currentIndex}, schedule ${state.schedule.length}주`);
+  console.log(
+    `✓ recycling_state: currentIndex=${state.currentIndex}, schedule ${state.schedule.length}주`
+  );
 }
 
 async function main() {
-  if (!process.env.DATABASE_URL) {
-    throw new Error("DATABASE_URL이 없습니다. .env.local 확인 바람.");
-  }
   console.log("이관 시작...\n");
   await migrateEmployees();
   await migrateDutyItems();

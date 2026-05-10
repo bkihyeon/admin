@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import {
+  createDutyItem,
   listDutyItems,
   listDutyItemsByOffice,
-  createDutyItem,
 } from "@/lib/db/repositories/duty-items";
 
 export async function GET(request: Request) {
@@ -18,7 +18,10 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const { name, requiredCount, officeId } = await request.json();
   if (!name?.trim()) {
-    return NextResponse.json({ error: "항목명을 입력해주세요" }, { status: 400 });
+    return NextResponse.json(
+      { error: "항목명을 입력해주세요" },
+      { status: 400 }
+    );
   }
 
   const newItem = await createDutyItem({

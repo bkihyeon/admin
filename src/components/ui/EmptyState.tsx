@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { ArrowRight, type LucideIcon } from "lucide-react";
+import Link from "next/link";
 
 interface EmptyStateProps {
   icon: LucideIcon;
@@ -21,8 +21,12 @@ export default function EmptyState({
       <div className="text-text-tertiary mb-4">
         <Icon size={48} strokeWidth={1} />
       </div>
-      <h3 className="text-base font-semibold text-text-primary mb-1">{title}</h3>
-      <p className="text-sm text-text-tertiary text-center max-w-xs">{description}</p>
+      <h3 className="text-base font-semibold text-text-primary mb-1">
+        {title}
+      </h3>
+      <p className="text-sm text-text-tertiary text-center max-w-xs">
+        {description}
+      </p>
       {actionLabel && actionHref && (
         <Link
           href={actionHref}

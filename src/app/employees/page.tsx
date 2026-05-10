@@ -1,17 +1,17 @@
 "use client";
 
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Pencil, PlusCircle, Trash2, Users } from "lucide-react";
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useOffice } from "@/contexts/OfficeContext";
-import { Employee } from "@/lib/types";
-import { queryKeys } from "@/lib/query-keys";
-import Card from "@/components/ui/Card";
+import EmployeesSkeleton from "@/components/skeletons/EmployeesSkeleton";
 import Button from "@/components/ui/Button";
-import PageHeader from "@/components/ui/PageHeader";
+import Card from "@/components/ui/Card";
 import EmptyState from "@/components/ui/EmptyState";
 import Input from "@/components/ui/Input";
-import EmployeesSkeleton from "@/components/skeletons/EmployeesSkeleton";
-import { PlusCircle, Pencil, Trash2, Users } from "lucide-react";
+import PageHeader from "@/components/ui/PageHeader";
+import { useOffice } from "@/contexts/OfficeContext";
+import { queryKeys } from "@/lib/query-keys";
+import type { Employee } from "@/lib/types";
 
 export default function EmployeesPage() {
   const { selectedOfficeId, offices } = useOffice();
@@ -31,7 +31,9 @@ export default function EmployeesPage() {
   });
 
   const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: queryKeys.employees(selectedOfficeId) });
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.employees(selectedOfficeId),
+    });
     queryClient.invalidateQueries({ queryKey: queryKeys.recycling });
   };
 
@@ -55,7 +57,10 @@ export default function EmployeesPage() {
       await fetch(`/api/employees/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: editName, officeId: editOfficeId || null }),
+        body: JSON.stringify({
+          name: editName,
+          officeId: editOfficeId || null,
+        }),
       });
     },
     onSuccess: () => {
@@ -104,12 +109,20 @@ export default function EmployeesPage() {
         </h3>
         <div className="flex gap-3 items-end">
           <div className="flex-1">
-            <label className="block text-xs font-medium text-text-secondary mb-1.5">이름</label>
+            <label
+              htmlFor="employee-name"
+              className="block text-xs font-medium text-text-secondary mb-1.5"
+            >
+              이름
+            </label>
             <Input
+              id="employee-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && handleAdd()}
+              onKeyDown={(e) =>
+                e.key === "Enter" && !e.nativeEvent.isComposing && handleAdd()
+              }
               placeholder="이름 입력"
               className="w-full"
             />
@@ -129,10 +142,18 @@ export default function EmployeesPage() {
           <table className="w-full">
             <thead>
               <tr className="bg-surface-tertiary/50">
-                <th className="text-left py-3 px-5 text-xs font-semibold text-text-tertiary uppercase tracking-wider w-16">번호</th>
-                <th className="text-left py-3 px-5 text-xs font-semibold text-text-tertiary uppercase tracking-wider">이름</th>
-                <th className="text-center py-3 px-5 text-xs font-semibold text-text-tertiary uppercase tracking-wider w-32">사무실</th>
-                <th className="text-right py-3 px-5 text-xs font-semibold text-text-tertiary uppercase tracking-wider w-40">관리</th>
+                <th className="text-left py-3 px-5 text-xs font-semibold text-text-tertiary uppercase tracking-wider w-16">
+                  번호
+                </th>
+                <th className="text-left py-3 px-5 text-xs font-semibold text-text-tertiary uppercase tracking-wider">
+                  이름
+                </th>
+                <th className="text-center py-3 px-5 text-xs font-semibold text-text-tertiary uppercase tracking-wider w-32">
+                  사무실
+                </th>
+                <th className="text-right py-3 px-5 text-xs font-semibold text-text-tertiary uppercase tracking-wider w-40">
+                  관리
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -140,10 +161,14 @@ export default function EmployeesPage() {
                 <tr
                   key={emp.id}
                   className={`border-b border-border-light last:border-0 transition-colors duration-150 ${
-                    editingId === emp.id ? "bg-primary-50/50" : "hover:bg-surface-secondary"
+                    editingId === emp.id
+                      ? "bg-primary-50/50"
+                      : "hover:bg-surface-secondary"
                   }`}
                 >
-                  <td className="py-4 px-5 text-xs text-text-tertiary font-mono">{idx + 1}</td>
+                  <td className="py-4 px-5 text-xs text-text-tertiary font-mono">
+                    {idx + 1}
+                  </td>
                   <td className="py-4 px-5">
                     {editingId === emp.id ? (
                       <Input
@@ -151,11 +176,17 @@ export default function EmployeesPage() {
                         type="text"
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && handleUpdate(emp.id)}
+                        onKeyDown={(e) =>
+                          e.key === "Enter" &&
+                          !e.nativeEvent.isComposing &&
+                          handleUpdate(emp.id)
+                        }
                         autoFocus
                       />
                     ) : (
-                      <span className="text-sm font-medium text-text-primary">{emp.name}</span>
+                      <span className="text-sm font-medium text-text-primary">
+                        {emp.name}
+                      </span>
                     )}
                   </td>
                   <td className="py-4 px-5 text-center">
@@ -167,11 +198,15 @@ export default function EmployeesPage() {
                       >
                         <option value="">미지정</option>
                         {offices.map((o) => (
-                          <option key={o.id} value={o.id}>{o.name}</option>
+                          <option key={o.id} value={o.id}>
+                            {o.name}
+                          </option>
                         ))}
                       </select>
                     ) : (
-                      <span className={`text-xs ${getOfficeName(emp.officeId) ? "text-text-primary font-medium" : "text-text-tertiary"}`}>
+                      <span
+                        className={`text-xs ${getOfficeName(emp.officeId) ? "text-text-primary font-medium" : "text-text-tertiary"}`}
+                      >
                         {getOfficeName(emp.officeId) ?? "미지정"}
                       </span>
                     )}
@@ -180,15 +215,38 @@ export default function EmployeesPage() {
                     <div className="flex items-center justify-end gap-2">
                       {editingId === emp.id ? (
                         <>
-                          <Button size="sm" onClick={() => handleUpdate(emp.id)}>저장</Button>
-                          <Button variant="ghost" size="sm" onClick={() => setEditingId(null)}>취소</Button>
+                          <Button
+                            size="sm"
+                            onClick={() => handleUpdate(emp.id)}
+                          >
+                            저장
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditingId(null)}
+                          >
+                            취소
+                          </Button>
                         </>
                       ) : (
                         <>
-                          <Button variant="ghost" size="sm" onClick={() => { setEditingId(emp.id); setEditName(emp.name); setEditOfficeId(emp.officeId ?? ""); }}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setEditingId(emp.id);
+                              setEditName(emp.name);
+                              setEditOfficeId(emp.officeId ?? "");
+                            }}
+                          >
                             <Pencil size={14} /> 수정
                           </Button>
-                          <Button variant="danger" size="sm" onClick={() => handleDelete(emp.id, emp.name)}>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => handleDelete(emp.id, emp.name)}
+                          >
                             <Trash2 size={14} /> 삭제
                           </Button>
                         </>

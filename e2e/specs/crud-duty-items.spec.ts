@@ -1,11 +1,11 @@
-import { test, expect, acceptDialog } from "../fixtures/test";
+import { acceptDialog, expect, test } from "../fixtures/test";
 
 test("담당항목 CRUD 사이클", async ({ page, db }) => {
   const office = await db.seedOffice("CRUD-D");
 
   await page.goto("/settings");
   await expect(
-    page.locator("aside select").locator("option", { hasText: "CRUD-D" }),
+    page.locator("aside select").locator("option", { hasText: "CRUD-D" })
   ).toHaveCount(1);
   await page.locator("aside select").selectOption(office.id);
 

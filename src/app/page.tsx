@@ -1,17 +1,17 @@
 "use client";
 
-import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useOffice } from "@/contexts/OfficeContext";
-import type { MaskedDutyResponse } from "@/lib/types";
-import { queryKeys } from "@/lib/query-keys";
-import Card from "@/components/ui/Card";
-import Badge from "@/components/ui/Badge";
-import PageHeader from "@/components/ui/PageHeader";
-import EmptyState from "@/components/ui/EmptyState";
+import { Clipboard, ClipboardCheck, Users } from "lucide-react";
+import { useMemo } from "react";
 import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
-import { ClipboardCheck, Users, Clipboard } from "lucide-react";
+import Badge from "@/components/ui/Badge";
+import Card from "@/components/ui/Card";
+import EmptyState from "@/components/ui/EmptyState";
+import PageHeader from "@/components/ui/PageHeader";
+import { useOffice } from "@/contexts/OfficeContext";
 import { groupCardsByItem } from "@/lib/duties/cards";
+import { queryKeys } from "@/lib/query-keys";
+import type { MaskedDutyResponse } from "@/lib/types";
 
 export default function Dashboard() {
   const { selectedOfficeId } = useOffice();
@@ -30,7 +30,9 @@ export default function Dashboard() {
   const { data, isLoading } = useQuery<MaskedDutyResponse | null>({
     queryKey: queryKeys.duties(selectedOfficeId, currentMonth),
     queryFn: async () => {
-      const res = await fetch(`/api/duties?month=${currentMonth}&officeId=${selectedOfficeId}`);
+      const res = await fetch(
+        `/api/duties?month=${currentMonth}&officeId=${selectedOfficeId}`
+      );
       const data: MaskedDutyResponse | null = await res.json();
       return data;
     },
@@ -44,7 +46,10 @@ export default function Dashboard() {
 
   const groups = completed ? groupCardsByItem(duty.cards) : [];
   const dutyItemGroups = groups.filter((g) => !g.isFree);
-  const totalAssigned = dutyItemGroups.reduce((sum, g) => sum + g.employees.length, 0);
+  const totalAssigned = dutyItemGroups.reduce(
+    (sum, g) => sum + g.employees.length,
+    0
+  );
   const freeEmployee = duty?.freeEmployee;
 
   return (
@@ -58,7 +63,9 @@ export default function Dashboard() {
               <Clipboard size={20} strokeWidth={1.5} />
             </div>
             <div>
-              <p className="text-xs text-text-tertiary font-medium">배정 항목</p>
+              <p className="text-xs text-text-tertiary font-medium">
+                배정 항목
+              </p>
               <p className="text-2xl font-bold text-text-primary">
                 {dutyItemGroups.length}
               </p>
@@ -71,8 +78,12 @@ export default function Dashboard() {
               <Users size={20} strokeWidth={1.5} />
             </div>
             <div>
-              <p className="text-xs text-text-tertiary font-medium">배정 인원</p>
-              <p className="text-2xl font-bold text-text-primary">{totalAssigned}</p>
+              <p className="text-xs text-text-tertiary font-medium">
+                배정 인원
+              </p>
+              <p className="text-2xl font-bold text-text-primary">
+                {totalAssigned}
+              </p>
             </div>
           </div>
         </Card>
@@ -80,7 +91,11 @@ export default function Dashboard() {
 
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-5">
-          <ClipboardCheck size={20} strokeWidth={1.5} className="text-primary-500" />
+          <ClipboardCheck
+            size={20}
+            strokeWidth={1.5}
+            className="text-primary-500"
+          />
           <h3 className="text-base font-semibold text-text-primary">
             이번 달 청소 배정
           </h3>
@@ -101,8 +116,10 @@ export default function Dashboard() {
                     {g.name}
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {g.employees.map((name, i) => (
-                      <Badge key={i} variant="primary">{name}</Badge>
+                    {g.employees.map((name) => (
+                      <Badge key={name} variant="primary">
+                        {name}
+                      </Badge>
                     ))}
                   </div>
                 </div>
@@ -110,9 +127,13 @@ export default function Dashboard() {
             </div>
             {freeEmployee && freeEmployee.employeeNames.length > 0 && (
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs text-text-tertiary font-medium">프리:</span>
-                {freeEmployee.employeeNames.map((name, i) => (
-                  <Badge key={i} variant="neutral">{name}</Badge>
+                <span className="text-xs text-text-tertiary font-medium">
+                  프리:
+                </span>
+                {freeEmployee.employeeNames.map((name) => (
+                  <Badge key={name} variant="neutral">
+                    {name}
+                  </Badge>
                 ))}
               </div>
             )}

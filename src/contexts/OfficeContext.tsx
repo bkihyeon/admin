@@ -1,9 +1,15 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Office } from "@/lib/types";
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useState,
+} from "react";
 import { queryKeys } from "@/lib/query-keys";
+import type { Office } from "@/lib/types";
 
 interface OfficeContextValue {
   offices: Office[];
@@ -21,12 +27,14 @@ const STORAGE_KEY = "selectedOfficeId";
 export function OfficeProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   // 사용자가 직접 선택했거나 localStorage에서 복원한 ID. offices에 없으면 파생 단계에서 fallback
-  const [pickedOfficeId, setPickedOfficeIdState] = useState<string | null>(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem(STORAGE_KEY) ?? null;
+  const [pickedOfficeId, setPickedOfficeIdState] = useState<string | null>(
+    () => {
+      if (typeof window !== "undefined") {
+        return localStorage.getItem(STORAGE_KEY) ?? null;
+      }
+      return null;
     }
-    return null;
-  });
+  );
 
   const { data: offices = [], isLoading } = useQuery({
     queryKey: queryKeys.offices,
@@ -37,8 +45,11 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
   });
 
   // pickedOfficeId가 현재 offices 목록에 없으면 첫 항목으로 파생 (state 갱신 없음)
-  const pickedValid = pickedOfficeId && offices.some((o) => o.id === pickedOfficeId);
-  const selectedOfficeId = pickedValid ? pickedOfficeId : offices[0]?.id ?? null;
+  const pickedValid =
+    pickedOfficeId && offices.some((o) => o.id === pickedOfficeId);
+  const selectedOfficeId = pickedValid
+    ? pickedOfficeId
+    : (offices[0]?.id ?? null);
   const selectedOffice = offices.find((o) => o.id === selectedOfficeId) ?? null;
 
   const setSelectedOfficeId = useCallback((id: string) => {
