@@ -6,7 +6,7 @@ import type { NextRequest } from "next/server";
 // 절차: Vercel env에서 MAINTENANCE=1 배포 → migrate 실행 → 신코드 배포 → MAINTENANCE 제거.
 //
 // 정적 자산 / Next 내부 경로는 통과시켜 503 페이지 자체가 빈 화면이 되지 않게 한다.
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   if (process.env.MAINTENANCE !== "1") {
     return NextResponse.next();
   }
