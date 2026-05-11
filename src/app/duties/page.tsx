@@ -110,6 +110,14 @@ export default function DutiesPage() {
         queryKeys.duties(selectedOfficeId, currentMonth),
         data
       );
+      // 마지막 카드 flip으로 완료된 순간 history 캐시를 stale 처리해야
+      // 30초 staleTime 안에도 다음 mount/focus 시 새 row가 반영됨.
+      if (data.allFlipped) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.dutiesPage(selectedOfficeId),
+          refetchType: "none",
+        });
+      }
     },
   });
 
