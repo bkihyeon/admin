@@ -6,5 +6,6 @@ export const queryKeys = {
     month
       ? (["duties", officeId, month] as const)
       : (["duties", officeId] as const),
+  dutiesPage: (officeId: string | null) => ["duties-page", officeId] as const,
   recycling: ["recycling"] as const,
 };

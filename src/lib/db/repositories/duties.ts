@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, lt, sql } from "drizzle-orm";
 import { buildCards } from "@/lib/duties/cards";
 import type {
   CleaningDuty,
@@ -33,14 +33,28 @@ export async function getDutyByMonthAndOffice(
   return row ? toDuty(row) : null;
 }
 
-export async function listDutiesByOffice(
-  officeId: string
-): Promise<CleaningDuty[]> {
+export async function listCompletedDutiesPage(input: {
+  officeId: string;
+  limit: number;
+  before?: string;
+}): Promise<CleaningDuty[]> {
+  const conditions = [
+    eq(duties.officeId, input.officeId),
+    sql`jsonb_array_length(${duties.revealState}) > 0`,
+    sql`NOT EXISTS (
+      SELECT 1 FROM jsonb_array_elements(${duties.revealState}) elem
+      WHERE (elem->>'isFlipped')::boolean IS NOT TRUE
+    )`,
+  ];
+  if (input.before) {
+    conditions.push(lt(duties.month, input.before));
+  }
   const rows = await db
     .select()
     .from(duties)
-    .where(eq(duties.officeId, officeId))
-    .orderBy(desc(duties.month));
+    .where(and(...conditions))
+    .orderBy(desc(duties.month))
+    .limit(input.limit);
   return rows.map(toDuty);
 }
 

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   getDutyByMonthAndOffice,
-  listDutiesByOffice,
+  listCompletedDutiesPage,
   upsertDuty,
 } from "@/lib/db/repositories/duties";
 import { listDutyItemsByOffice } from "@/lib/db/repositories/duty-items";
@@ -9,13 +9,29 @@ import { listEmployeesByOffice } from "@/lib/db/repositories/employees";
 import { getOfficeById } from "@/lib/db/repositories/offices";
 import { maskDuty } from "@/lib/duties/mask";
 import { assignDutiesForOffice } from "@/lib/random-assign";
-import type { MaskedDutyResponse } from "@/lib/types";
+import type { CleaningDuty, DutiesPage, MaskedDutyResponse } from "@/lib/types";
 
-type GetResponse =
-  | MaskedDutyResponse
-  | MaskedDutyResponse[]
-  | null
-  | { error: string };
+type GetResponse = MaskedDutyResponse | DutiesPage | null | { error: string };
+
+const DEFAULT_LIMIT = 6;
+const MAX_LIMIT = 24;
+
+// 한 row가 corrupt해도 페이지 전체가 500이 되지 않도록 row 단위로 격리.
+function safeMask(rows: CleaningDuty[]): MaskedDutyResponse[] {
+  return rows.flatMap((row) => {
+    try {
+      return [maskDuty(row)];
+    } catch (err) {
+      console.error("[GET /api/duties] maskDuty skipped corrupt row", {
+        dutyId: row.id,
+        month: row.month,
+        officeId: row.officeId,
+        err,
+      });
+      return [];
+    }
+  });
+}
 
 export async function GET(
   request: Request
@@ -41,12 +57,19 @@ export async function GET(
     }
   }
 
-  const list = await listDutiesByOffice(officeId);
-  try {
-    return NextResponse.json(list.map(maskDuty));
-  } catch {
-    return NextResponse.json({ error: "internal" }, { status: 500 });
-  }
+  const before = searchParams.get("before") ?? undefined;
+  const limitRaw = Number(searchParams.get("limit") ?? DEFAULT_LIMIT);
+  const limit = Math.min(
+    Math.max(Number.isFinite(limitRaw) ? limitRaw : DEFAULT_LIMIT, 1),
+    MAX_LIMIT
+  );
+
+  const rows = await listCompletedDutiesPage({ officeId, limit, before });
+  const items = safeMask(rows);
+  // corrupt row가 skip돼도 다음 페이지 fetch가 가능하도록 hasMore는 raw row 길이 기준.
+  const hasMore = rows.length === limit;
+  const nextCursor = hasMore ? rows[rows.length - 1].month : null;
+  return NextResponse.json({ items, hasMore, nextCursor });
 }
 
 type PostResponse =

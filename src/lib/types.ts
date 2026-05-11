@@ -68,6 +68,12 @@ export interface MaskedDutyResponse {
   createdAt: string;
 }
 
+export interface DutiesPage {
+  items: MaskedDutyResponse[];
+  hasMore: boolean;
+  nextCursor: string | null;
+}
+
 export interface RecyclingWeek {
   weekNumber: number;
   assignedEmployeeIds: string[];

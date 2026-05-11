@@ -78,6 +78,10 @@ export default function DutiesPage() {
         queryKey: queryKeys.duties(selectedOfficeId),
         refetchType: "none",
       });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.dutiesPage(selectedOfficeId),
+        refetchType: "none",
+      });
       setWarning(data.warning ?? null);
       setShowFlipModal(true);
     },
