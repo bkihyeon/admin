@@ -60,5 +60,7 @@ test("등록 → 사원/항목 추가 → 뽑기 → 이력 확인 (전체 골�
   // 5) 이력 페이지에 이번 달 row 표시
   const currentMonth = new Date().toISOString().slice(0, 7);
   await page.goto("/history");
-  await expect(page.getByRole("button", { name: currentMonth })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: `${currentMonth} 청소 배정` })
+  ).toBeVisible();
 });

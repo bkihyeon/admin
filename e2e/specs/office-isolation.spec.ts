@@ -49,10 +49,14 @@ test("사무실 격리: A·B 배정이 JSONB merge로 모두 보존됨", async (
   const month = new Date().toISOString().slice(0, 7);
   await page.goto("/history");
   await selectOffice(page, "AAA사무소");
-  await expect(page.getByRole("button", { name: month })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: `${month} 청소 배정` })
+  ).toBeVisible();
   await expect(page.getByText("A빗자루")).toBeVisible();
 
   await selectOffice(page, "BBB사무소");
-  await expect(page.getByRole("button", { name: month })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: `${month} 청소 배정` })
+  ).toBeVisible();
   await expect(page.getByText("B청소기")).toBeVisible();
 });
