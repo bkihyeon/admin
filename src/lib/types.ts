@@ -43,10 +43,18 @@ export interface CleaningDuty {
   id: string;
   month: string; // "2026-04" 형식
   officeId: string | null;
+  version: number; // 같은 (month, office) 내 뽑기 회차. 재뽑기 시 증가, 이전 버전은 보존
   assignments: DutyAssignment[];
   freeEmployee: OfficeFreeEmployees | null;
   revealState: RevealState[];
   createdAt: string;
+}
+
+/** 특정 (month, office)의 한 버전 + 버전 메타. repository 조회 결과 단위 */
+export interface DutyWithVersionMeta {
+  duty: CleaningDuty;
+  totalVersions: number;
+  latestVersion: number;
 }
 
 export interface MaskedCard {
@@ -62,6 +70,9 @@ export interface MaskedDutyResponse {
   id: string;
   month: string;
   officeId: string | null;
+  version: number;
+  totalVersions: number;
+  isLatest: boolean;
   cards: MaskedCard[];
   freeEmployee: OfficeFreeEmployees | null;
   allFlipped: boolean;

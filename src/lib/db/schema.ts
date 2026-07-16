@@ -49,6 +49,8 @@ export const duties = pgTable(
     id: text("id").primaryKey(),
     month: text("month").notNull(),
     officeId: text("office_id"),
+    // 같은 (month, office)의 재뽑기마다 1씩 증가. 이전 버전은 삭제되지 않고 쌓임 (append-only).
+    version: integer("version").notNull().default(1),
     assignments: jsonb("assignments").$type<DutyAssignment[]>().notNull(),
     freeEmployee: jsonb("free_employee").$type<OfficeFreeEmployees | null>(),
     revealState: jsonb("reveal_state")
@@ -60,8 +62,8 @@ export const duties = pgTable(
       .defaultNow(),
   },
   (t) => [
-    unique("duties_month_office_unique")
-      .on(t.month, t.officeId)
+    unique("duties_month_office_version_unique")
+      .on(t.month, t.officeId, t.version)
       .nullsNotDistinct(),
     index("duties_month_idx").on(t.month),
     index("duties_office_idx").on(t.officeId),

@@ -9,6 +9,8 @@ import {
 import { Clock, Dices, LayoutGrid, Loader2 } from "lucide-react";
 import { useState } from "react";
 import CardFlipModal from "@/components/CardFlipModal";
+import DutyVersionNav from "@/components/DutyVersionNav";
+import DutyVersionView from "@/components/DutyVersionView";
 import DutiesSkeleton from "@/components/skeletons/DutiesSkeleton";
 import Alert from "@/components/ui/Alert";
 import Badge from "@/components/ui/Badge";
@@ -20,6 +22,7 @@ import PageHeader from "@/components/ui/PageHeader";
 import { useOffice } from "@/contexts/OfficeContext";
 import { groupCardsByItem } from "@/lib/duties/cards";
 import { useDelayedPending } from "@/lib/hooks/useDelayedPending";
+import { useDutyVersion } from "@/lib/hooks/useDutyVersion";
 import { queryKeys } from "@/lib/query-keys";
 import type { MaskedDutyResponse } from "@/lib/types";
 
@@ -28,8 +31,17 @@ export default function DutiesPage() {
   const queryClient = useQueryClient();
   const [warning, setWarning] = useState<string | null>(null);
   const [showFlipModal, setShowFlipModal] = useState(false);
+  // null = 최신 추적 (라이브 게임/결과). 숫자 = 이전 버전 read-only 보기
+  const [viewedVersion, setViewedVersion] = useState<number | null>(null);
 
   const [currentMonth] = useState(() => new Date().toISOString().slice(0, 7));
+
+  // 사무실 전환 시 다른 사무실의 버전 번호가 남지 않도록 렌더 중 리셋
+  const [prevOfficeId, setPrevOfficeId] = useState(selectedOfficeId);
+  if (prevOfficeId !== selectedOfficeId) {
+    setPrevOfficeId(selectedOfficeId);
+    setViewedVersion(null);
+  }
 
   const { data, isPending } = useQuery<MaskedDutyResponse | null>({
     queryKey: queryKeys.duties(selectedOfficeId, currentMonth),
@@ -54,6 +66,13 @@ export default function DutiesPage() {
 
   const showSkeleton = useDelayedPending(isPending);
   const duty = data ?? null;
+
+  // 이전 버전 read-only 조회 (viewedVersion=null이면 비활성)
+  const { data: versionData } = useDutyVersion(
+    selectedOfficeId,
+    currentMonth,
+    viewedVersion
+  );
 
   const drawMutation = useMutation({
     mutationFn: async () => {
@@ -82,6 +101,7 @@ export default function DutiesPage() {
         queryKey: queryKeys.dutiesPage(selectedOfficeId),
         refetchType: "none",
       });
+      setViewedVersion(null); // 이전 버전을 보던 중이었어도 새 게임으로 복귀
       setWarning(data.warning ?? null);
       setShowFlipModal(true);
     },
@@ -127,7 +147,7 @@ export default function DutiesPage() {
     if (duty && duty.cards.length > 0 && duty.allFlipped) {
       if (
         !confirm(
-          `${selectedOffice?.name} 배정이 이미 있습니다. 새로 뽑으시겠습니까?`
+          `${selectedOffice?.name} 배정이 이미 있습니다. 새로 뽑으시겠습니까? 기존 배정은 이전 버전으로 보관됩니다.`
         )
       )
         return;
@@ -139,7 +159,7 @@ export default function DutiesPage() {
     if (!selectedOfficeId) return;
     if (
       !confirm(
-        "진행 중인 게임을 취소하고 새로 뽑으시겠습니까? 현재 공개된 카드는 모두 사라집니다."
+        "진행 중인 게임을 중단하고 새로 뽑으시겠습니까? 지금까지의 게임은 이전 버전으로 보관됩니다."
       )
     )
       return;
@@ -148,7 +168,14 @@ export default function DutiesPage() {
 
   const hasGame = !!duty && duty.cards.length > 0;
   const inProgress = hasGame && !duty.allFlipped;
-  const showResults = hasGame && duty.allFlipped;
+  const viewingOld = viewedVersion !== null;
+  const showResults = hasGame && duty.allFlipped && !viewingOld;
+
+  // main 쿼리(duty)는 항상 최신 버전 → duty.version이 곧 최신 버전 번호
+  const changeVersion = (v: number) => {
+    if (!duty) return;
+    setViewedVersion(v >= duty.version ? null : v);
+  };
 
   // 결과 페이지에서 보일 항목별 그룹핑 (allFlipped 시점에만 노출)
   const groupedAssignments = showResults ? groupCardsByItem(duty.cards) : [];
@@ -181,6 +208,16 @@ export default function DutiesPage() {
           {warning && (
             <BlurFade delay={0.1}>
               <Alert>{warning}</Alert>
+            </BlurFade>
+          )}
+
+          {hasGame && duty.totalVersions > 1 && (
+            <BlurFade delay={0.05}>
+              <DutyVersionNav
+                version={viewedVersion ?? duty.version}
+                totalVersions={duty.totalVersions}
+                onChange={changeVersion}
+              />
             </BlurFade>
           )}
 
@@ -220,7 +257,15 @@ export default function DutiesPage() {
             </BlurFade>
           )}
 
-          {showResults ? (
+          {viewingOld ? (
+            <BlurFade delay={0.1}>
+              <div data-testid="old-version-view">
+                <Card className="p-6">
+                  {versionData ? <DutyVersionView duty={versionData} /> : null}
+                </Card>
+              </div>
+            </BlurFade>
+          ) : showResults ? (
             <>
               <BlurFade delay={0.1}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

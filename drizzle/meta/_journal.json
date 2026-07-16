@@ -29,6 +29,13 @@
       "when": 1778334506149,
       "tag": "0003_add_reveal_state",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1784211130699,
+      "tag": "0004_cooing_radioactive_man",
+      "breakpoints": true
     }
   ]
 }

@@ -73,6 +73,7 @@ export async function seedDutyItems(
 /**
  * AC-15 검증용: revealState 길이를 의도적으로 카드 수와 다르게 만든다.
  * length-mismatch row가 GET 응답에서 500을 반환하는지 검증하기 위해 사용.
+ * 길이 가드는 최신 버전 조회에만 적용되므로 최신 버전만 corrupt.
  */
 export async function corruptRevealState(
   month: string,
@@ -81,7 +82,12 @@ export async function corruptRevealState(
   await sql`
     UPDATE duties
     SET reveal_state = '[{"cardIndex":0,"isFlipped":false,"flippedAt":null}]'::jsonb
-    WHERE month = ${month} AND office_id = ${officeId}
+    WHERE id = (
+      SELECT id FROM duties
+      WHERE month = ${month} AND office_id = ${officeId}
+      ORDER BY version DESC
+      LIMIT 1
+    )
   `;
 }
 

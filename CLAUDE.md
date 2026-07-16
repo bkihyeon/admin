@@ -35,7 +35,7 @@ pnpm test:e2e:report          # 직전 실행 HTML report
 
 회사 청소 담당 관리 프로그램. Next.js 풀스택 앱. Vercel + Neon Postgres 배포.
 
-사용 모델: 쓰기(사원/품목 등록, 배정 뽑기, 재활용 순환)는 사실상 관리자 1인이 수행하지만, **읽기는 여러 명이 동시에 접근 가능**한 공개 URL. 인증은 아직 없음 — 누구나 URL을 알면 수정도 가능한 상태이므로, 파괴적 작업(삭제/재배정)은 프론트 `confirm`으로만 방어 중. 같은 월의 같은 사무실 동시 재배정은 `(month, office_id)` UNIQUE의 row 락 + `upsertDuty`의 `ON CONFLICT DO UPDATE`로 원자화, 다른 사무실 간에는 row 자체가 분리되어 race 자체가 없음.
+사용 모델: 쓰기(사원/품목 등록, 배정 뽑기, 재활용 순환)는 사실상 관리자 1인이 수행하지만, **읽기는 여러 명이 동시에 접근 가능**한 공개 URL. 인증은 아직 없음 — 누구나 URL을 알면 수정도 가능한 상태이므로, 파괴적 작업(삭제)은 프론트 `confirm`으로만 방어 중. 재배정은 파괴적이지 않음: 같은 (month, office)의 재뽑기는 **새 버전을 append**하고 이전 버전을 보존한다 (`duties.version`, drizzle 0004). 동시 재배정 race는 `(month, office_id, version)` UNIQUE 위반 감지 + 재시도로 해소 — 어느 쪽 결과도 소실되지 않음. 다른 사무실 간에는 row 자체가 분리되어 race 자체가 없음.
 
 ### 기술 스택
 - **Next.js 16** (App Router) + **TypeScript** (strict mode)
@@ -50,7 +50,8 @@ pnpm test:e2e:report          # 직전 실행 HTML report
 - `src/lib/db/id.ts` — `generateId()` (8자리 UUID 슬라이스)
 - `src/lib/types.ts` — 모든 엔티티 인터페이스 + `MaskedDutyResponse` (UI 응답 타입). Drizzle `$type<>()` 힌트와 공유
 - `src/lib/duties/` — `cards.ts` (`buildCards` 평탄화 + `groupCardsByItem` 그룹핑), `mask.ts` (`maskDuty`로 `dutyItemName` 마스킹·`revealState` 길이 검증)
-- `duties.reveal_state` jsonb (drizzle 0003): `[{cardIndex, isFlipped, flippedAt}]` 배열. 길이가 카드 수와 일치해야 하며, 불일치 시 GET 500 (corruption 가드)
+- `duties.reveal_state` jsonb (drizzle 0003): `[{cardIndex, isFlipped, flippedAt}]` 배열. 길이가 카드 수와 일치해야 하며, 불일치 시 GET 500 (corruption 가드). 가드는 **최신 버전 조회에만** 적용 — superseded 버전은 게임이 없으므로 revealAll 마스킹이 revealState 인덱싱을 우회
+- `duties.version` (drizzle 0004): 같은 (month, office)의 뽑기 회차. 재뽑기마다 +1로 append, 이전 버전은 불변 보존. DELETE 경로가 없어 1..N 연속 보장
 
 ### 사무실 격리 구조
 - `src/contexts/OfficeContext.tsx` — 전역 사무실 선택 상태 관리 (`useOffice()` 훅). localStorage로 마지막 선택 기억
@@ -64,20 +65,22 @@ pnpm test:e2e:report          # 직전 실행 HTML report
 - 페이지는 `"use client"` + `fetch`로 API 호출. `useOffice()`에서 `selectedOfficeId`를 받아 API 요청에 포함
 - `duties.assignments`, `recycling_state.schedule`은 JSONB로 저장 (월 단위 완결형 구조라 정규화 이득 없음)
 - JSONB에는 ID뿐 아니라 사원명/품목명/officeId/officeName 스냅샷도 함께 저장됨 — **의도적 동결**. "한 번 뽑힌 담당은 바뀌지 않는다"는 요구사항을 위해, 배정 시점의 이름을 그대로 보존. 사원 개명/삭제/사무실 이동이 일어나도 과거 기록은 원형대로 유지
-- 단, "동결"은 **다른 (month, officeId) 조합**에 한정. 같은 사무실의 같은 월 재배정은 `upsertDuty`가 덮어씀 (프론트 `src/app/duties/page.tsx`에서 `confirm` 경고 후 진행)
-- duties POST는 officeId 필수. `(month, office_id)` row 단위 upsert — 다른 사무실 row는 영향 없음
+- "동결"은 버전 단위: 같은 사무실의 같은 월 재배정도 이전 버전을 덮지 않고 `createDutyVersion`이 새 버전을 INSERT (`INSERT ... SELECT COALESCE(MAX(version),0)+1` 단일 atomic 쿼리, 23505 시 재시도). 프론트는 `confirm` 안내 후 진행
+- duties POST는 officeId 필수. 항상 새 버전 append — 다른 사무실·이전 버전 row는 영향 없음
 - `recycling_state`는 `id = 1` singleton (한 행만 존재)
-- `duties`에 `(month, office_id) UNIQUE NULLS NOT DISTINCT` 제약 — 사무실별 월별 중복은 DB가 강제, `upsertDuty`가 `ON CONFLICT DO UPDATE` 사용. `NULLS NOT DISTINCT`는 PG15+ 기능으로 `office_id`가 NULL인 케이스(orphan/legacy)도 한 month당 1건으로 강제
+- `duties`에 `(month, office_id, version) UNIQUE NULLS NOT DISTINCT` 제약 (drizzle 0004에서 `(month, office_id)` UNIQUE 대체). `NULLS NOT DISTINCT`는 PG15+ 기능으로 `office_id`가 NULL인 케이스(orphan/legacy)도 강제 대상
+- 조회: `GET /api/duties?month&officeId`는 최신 버전 (+`version`/`totalVersions`/`isLatest` 메타), `&version=n`으로 특정 버전. superseded 버전은 **전체 공개**(마스킹은 진행 중 게임의 장치). 이력 피드는 월별 "최신 완료 버전" 1건 (`DISTINCT ON (month)`) — 재뽑기 진행 중에도 직전 완료본이 피드에 유지됨
 
 ### 실시간 카드 뽑기 (멀티유저 동기화)
-- `MaskedDutyResponse`: `dutyItemName`은 `isFlipped=false`일 때 `null`로 마스킹. `freeEmployee`는 `allFlipped=true`일 때만 노출
-- `POST /api/duties/flip` `(month, officeId, cardIndex)` — 멱등. 두 번 호출해도 `flippedAt` 보존, 잘못된 인덱스는 404, 검증 실패는 400
-- `POST /api/duties` 신규 게임 시 `revealState` 초기화 (모든 `isFlipped=false`)
-- 클라이언트 폴링: `refetchInterval` 동적 — 데이터 없거나 진행 중이면 1.5s, `allFlipped=true`이면 멈춤 (`src/app/duties/page.tsx`)
+- `MaskedDutyResponse`: `dutyItemName`은 `isFlipped=false`일 때 `null`로 마스킹. `freeEmployee`는 `allFlipped=true`일 때만 노출 (superseded 버전은 둘 다 전체 공개)
+- `POST /api/duties/flip` `(month, officeId, cardIndex)` — 멱등, **항상 최신 버전 타깃** (서브쿼리 포함 단일 statement). 두 번 호출해도 `flippedAt` 보존, 잘못된 인덱스는 404, 검증 실패는 400
+- `POST /api/duties` 신규 게임 = 새 버전 (revealState 모든 `isFlipped=false`로 초기화)
+- 클라이언트 폴링: `refetchInterval` 동적 — 데이터 없거나 진행 중이면 1.5s, `allFlipped=true`이면 멈춤 (`src/app/duties/page.tsx`). main 쿼리 `["duties", officeId, month]`는 항상 최신 버전 → 다른 탭의 재뽑기(새 버전)도 자동 감지
+- 버전 탐색 UI: `DutyVersionNav`(◀ ▶) + `DutyVersionView`(read-only) + `useDutyVersion` 훅. 특정 버전은 `["duty-version", ...]` 별도 키, superseded 응답만 `staleTime: Infinity` (불변)
 
 ### 진행 중 게임 가드
 - 메인 "뽑기" 버튼: `hasGame && !allFlipped`이면 `disabled` (다른 탭의 진행 중 게임도 폴링으로 감지)
-- 진행 중 카드 영역: "새로 뽑기" (danger, `confirm` 후 새 게임으로 덮어씀) + "참가하기" (CardFlipModal 재오픈)
+- 진행 중 카드 영역: "새로 뽑기" (danger, `confirm` 후 새 버전 시작 — 중단된 게임도 이전 버전으로 보관) + "참가하기" (CardFlipModal 재오픈)
 - 완료(`allFlipped=true`) 상태에서만 메인 버튼 enabled — 기존 `confirm("배정이 이미 있습니다")` 경로 유지
 
 ### 운영 토글

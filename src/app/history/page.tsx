@@ -2,16 +2,17 @@
 
 import { keepPreviousData, useInfiniteQuery } from "@tanstack/react-query";
 import { Clock } from "lucide-react";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import DutyVersionNav from "@/components/DutyVersionNav";
+import DutyVersionView from "@/components/DutyVersionView";
 import HistorySkeleton from "@/components/skeletons/HistorySkeleton";
-import Badge from "@/components/ui/Badge";
 import { BlurFade } from "@/components/ui/blur-fade";
 import Card from "@/components/ui/Card";
 import EmptyState from "@/components/ui/EmptyState";
 import PageHeader from "@/components/ui/PageHeader";
 import { useOffice } from "@/contexts/OfficeContext";
-import { groupCardsByItem } from "@/lib/duties/cards";
 import { useDelayedPending } from "@/lib/hooks/useDelayedPending";
+import { useDutyVersion } from "@/lib/hooks/useDutyVersion";
 import { queryKeys } from "@/lib/query-keys";
 import type { DutiesPage, MaskedDutyResponse } from "@/lib/types";
 
@@ -92,7 +93,7 @@ export default function HistoryPage() {
         <div className="space-y-6">
           {duties.map((duty, idx) => (
             <BlurFade key={duty.id} delay={Math.min(idx * 0.05, 0.3)}>
-              <DutyFeedItem duty={duty} />
+              <DutyFeedItem duty={duty} officeId={selectedOfficeId} />
             </BlurFade>
           ))}
 
@@ -115,52 +116,38 @@ export default function HistoryPage() {
   );
 }
 
-function DutyFeedItem({ duty }: { duty: MaskedDutyResponse }) {
-  const groups = groupCardsByItem(duty.cards);
-  const dutyItemGroups = groups.filter((g) => !g.isFree);
-  const freeEmployeeNames = duty.freeEmployee?.employeeNames ?? [];
+function DutyFeedItem({
+  duty,
+  officeId,
+}: {
+  duty: MaskedDutyResponse;
+  officeId: string | null;
+}) {
+  // 피드 항목(duty)은 그 월의 "최신 완료 버전". null이면 그대로, 숫자면 해당 버전 조회
+  const [viewedVersion, setViewedVersion] = useState<number | null>(null);
+  const { data: versionData } = useDutyVersion(
+    officeId,
+    duty.month,
+    viewedVersion
+  );
+  const displayed = viewedVersion === null ? duty : versionData;
 
   return (
     <Card className="p-6">
-      <h3 className="text-base font-semibold text-text-primary mb-4">
-        {duty.month} 청소 배정
-      </h3>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {dutyItemGroups.map((g) => (
-          <div
-            key={g.name}
-            className="rounded-lg bg-surface-secondary border border-border-light p-4"
-          >
-            <div className="text-sm font-semibold text-text-primary mb-2">
-              {g.name}
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {g.employees.map((name) => (
-                <Badge key={name} variant="neutral">
-                  {name}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        ))}
+      <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+        <h3 className="text-base font-semibold text-text-primary">
+          {duty.month} 청소 배정
+        </h3>
+        {duty.totalVersions > 1 && (
+          <DutyVersionNav
+            version={viewedVersion ?? duty.version}
+            totalVersions={duty.totalVersions}
+            onChange={(v) => setViewedVersion(v === duty.version ? null : v)}
+          />
+        )}
       </div>
 
-      {freeEmployeeNames.length > 0 && (
-        <div className="mt-3 flex items-center gap-2 flex-wrap">
-          <span className="text-xs text-text-tertiary font-medium">프리:</span>
-          {freeEmployeeNames.map((name) => (
-            <Badge key={name} variant="neutral">
-              {name}
-            </Badge>
-          ))}
-        </div>
-      )}
-
-      <p className="mt-4 text-xs text-text-tertiary flex items-center gap-1.5">
-        <Clock size={14} />
-        배정일시: {new Date(duty.createdAt).toLocaleString("ko-KR")}
-      </p>
+      {displayed ? <DutyVersionView duty={displayed} /> : null}
     </Card>
   );
 }

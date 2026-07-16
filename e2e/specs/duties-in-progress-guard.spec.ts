@@ -87,7 +87,7 @@ test("AC-5: 새로 뽑기 + confirm 승낙 → 새 게임 시작 + 모든 카드
   await gotoDuties(page, office.id);
   await expect(page.getByTestId("rerun-btn")).toBeVisible();
 
-  acceptDialog(page, "현재 공개된 카드는 모두 사라집니다");
+  acceptDialog(page, "이전 버전으로 보관됩니다");
   await page.getByTestId("rerun-btn").click();
 
   // drawMutation onSuccess가 modal 자동 오픈
@@ -120,7 +120,7 @@ test("AC-6: 새로 뽑기 + confirm 거부 → 기존 게임 유지", async ({
   await expect(page.getByText(/1\/3 카드 공개됨/)).toBeVisible();
 
   page.once("dialog", async (d) => {
-    expect(d.message()).toContain("현재 공개된 카드는 모두 사라집니다");
+    expect(d.message()).toContain("이전 버전으로 보관됩니다");
     await d.dismiss();
   });
   await page.getByTestId("rerun-btn").click();
@@ -203,7 +203,7 @@ test("AC-7-bis: 탭 A modal-open + 탭 B 새로 뽑기 → 탭 A modal cards 교
 
   // 탭 B: 새로 뽑기 (rerun-btn 노출 대기)
   await expect(pageB.getByTestId("rerun-btn")).toBeVisible();
-  acceptDialog(pageB, "현재 공개된 카드는 모두 사라집니다");
+  acceptDialog(pageB, "이전 버전으로 보관됩니다");
   await pageB.getByTestId("rerun-btn").click();
 
   // 탭 A: modal은 열린 채, polling으로 cards 새 게임 교체 → card 0 item 사라짐 (unflipped 재초기화)
